@@ -10,7 +10,8 @@ public sealed class AppSettings
     public float DefaultZoom { get; set; } = 0.5f;
     public bool LoadLastMap { get; set; } = true;
     public string LastMapPath { get; set; } = string.Empty;
-    
+    public bool IsFirstRun { get; set; } = true; // NEW
+
     public static AppSettings LoadFromFile(string filePath)
     {
         if (!File.Exists(filePath))
@@ -31,9 +32,9 @@ public sealed class AppSettings
     {
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(this, new System.Text.Json.JsonSerializerOptions 
-            { 
-                WriteIndented = true 
+            var json = System.Text.Json.JsonSerializer.Serialize(this, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
             });
             File.WriteAllText(filePath, json);
         }
@@ -45,13 +46,19 @@ public sealed class AppSettings
 
     private static AppSettings CreateDefault()
     {
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var defaultDir = Path.Combine(userProfile, "Downloads", "CO", "6090");
-
         return new AppSettings
         {
-            ConquerDirectory = defaultDir,
-            GameMapFilePath = Path.Combine(defaultDir, "ini", "gamemap.dat")
+            ConquerDirectory = string.Empty,
+            GameMapFilePath = string.Empty,
+            IsFirstRun = true
         };
+    }
+
+    public bool IsValidConfiguration()
+    {
+        return !string.IsNullOrEmpty(ConquerDirectory) &&
+               Directory.Exists(ConquerDirectory) &&
+               !string.IsNullOrEmpty(GameMapFilePath) &&
+               File.Exists(GameMapFilePath);
     }
 }

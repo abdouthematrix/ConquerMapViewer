@@ -14,13 +14,14 @@ namespace ConquerMapViewer.WPF.DependencyInjection;
 
 public static class ServiceConfiguration
 {
-    public static IServiceProvider ConfigureServices(ServiceCollection services)
+    public static IServiceProvider ConfigureServices()
     {
+        var services = new ServiceCollection();
+
         // Logging
         services.AddLogging(builder =>
         {
             builder.AddDebug();
-            builder.AddConsole();
             builder.SetMinimumLevel(LogLevel.Information);
         });
 
@@ -56,29 +57,28 @@ public static class ServiceConfiguration
         {
             var settings = sp.GetRequiredService<AppSettings>();
             var gameMapPath = settings.GameMapFilePath;
-            
+
             if (!File.Exists(gameMapPath))
             {
                 var logger = sp.GetRequiredService<ILogger<GameMapRepository>>();
-                logger.LogWarning($"GameMap file not found at: {gameMapPath}");
-                // Return empty repository
-                return new GameMapRepository(string.Empty);
+                logger.LogError("GameMap file not found at: {Path}", gameMapPath);
+                throw new FileNotFoundException($"GameMap file not found: {gameMapPath}");
             }
-            
+
             return new GameMapRepository(gameMapPath);
         });
 
         // Application services
         services.AddSingleton<MapLoadingService>();
-        services.AddSingleton<MapViewerService>(); // Changed to Singleton for state preservation
+        services.AddSingleton<MapViewerService>();
 
         // ViewModels
-        services.AddSingleton<MainViewModel>(); // Changed to Singleton for state preservation
+        services.AddSingleton<MainViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
 
-        // Additional UI Services
+        // UI Services
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
 
@@ -87,11 +87,18 @@ public static class ServiceConfiguration
 
     private static void ValidateDirectory(string path, string description)
     {
+        if (string.IsNullOrEmpty(path))
+        {
+            throw new InvalidOperationException(
+                $"{description} has not been configured. Please run the setup wizard."
+            );
+        }
+
         if (!Directory.Exists(path))
         {
             throw new DirectoryNotFoundException(
                 $"{description} not found at: {path}. " +
-                $"Please configure the correct path in settings."
+                $"Please verify the path in settings or run the setup wizard again."
             );
         }
     }

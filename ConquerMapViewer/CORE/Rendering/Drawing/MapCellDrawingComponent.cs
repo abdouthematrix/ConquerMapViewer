@@ -51,7 +51,6 @@ public sealed class MapCellDrawingComponent : BaseDrawingComponent
                     var cell = _cells[(int)mapCoord.X, (int)mapCoord.Y];
                     var cellPos = new Vector2(x * 32 + drawX, y * 32 + (drawY - (x % 2) * 16));
                     _vertexBuilder.AddCell(cellPos, cell.AccessColor);
-                    //System.Diagnostics.Debug.WriteLine("rec {0},screenPoint {1}, cellpos {2}, cell {3}", rec, screenPoint, cellpos, cell);
                 }
             }
         }

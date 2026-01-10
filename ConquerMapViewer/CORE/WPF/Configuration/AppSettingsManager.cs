@@ -14,7 +14,7 @@ public sealed class AppSettingsManager
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var appFolder = Path.Combine(appData, "ConquerMapViewer");
         Directory.CreateDirectory(appFolder);
-        
+
         _settingsPath = Path.Combine(appFolder, "settings.json");
         _settings = AppSettings.LoadFromFile(_settingsPath);
     }
@@ -34,6 +34,13 @@ public sealed class AppSettingsManager
     {
         _settings.ConquerDirectory = directory;
         _settings.GameMapFilePath = Path.Combine(directory, "ini", "gamemap.dat");
+        _settings.IsFirstRun = false;
+        Save();
+    }
+
+    public void CompleteFirstRun()
+    {
+        _settings.IsFirstRun = false;
         Save();
     }
 }
