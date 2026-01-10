@@ -24,13 +24,27 @@ public sealed class MapViewerService : IDisposable
     private Vector2 _position = Vector2.Zero;
     private float _zoom = 0.5f;
     private Rectangle _drawWindow;
+    private Vector2? _defaultPosition;
+    private float _defaultZoom = 0.5f;
 
     public Vector2 Position
     {
         get => _position;
         set
         {
-            _position = value;//new Vector2(Math.Max(0, value.X), Math.Max(0, value.Y));
+            if (_puzzle != null)
+            {
+                var maxX = Math.Max(0, _puzzle.Width - _drawWindow.Width);
+                var maxY = Math.Max(0, _puzzle.Height - _drawWindow.Height);
+                _position = new Vector2(
+                    Math.Clamp(value.X, 0, maxX),
+                    Math.Clamp(value.Y, 0, maxY)
+                );
+            }
+            else
+            {
+                _position = value;
+            }
             UpdateDrawWindow();
         }
     }
@@ -40,13 +54,17 @@ public sealed class MapViewerService : IDisposable
         get => _zoom;
         set
         {
-            _zoom = Math.Max(0.01f, value);
+            _zoom = Math.Clamp(value, 0.1f, 5.0f);
             UpdateDrawWindow();
+            ZoomChanged?.Invoke(this, _zoom);
         }
     }
 
     public Rectangle DrawWindow => _drawWindow;
     public IsometricCoordinateSystem? CoordinateSystem => _coordinateSystem;
+    public Puzzle? Puzzle => _puzzle;
+
+    public event EventHandler<float>? ZoomChanged;
 
     public MapViewerService(
         MapLoadingService mapLoadingService,
@@ -74,6 +92,10 @@ public sealed class MapViewerService : IDisposable
         _coordinateSystem = new IsometricCoordinateSystem(_puzzle, _mapData);
 
         InitializeDrawingComponents();
+        
+        _defaultPosition = new Vector2(_puzzle.Width / 4f, _puzzle.Height / 4f);
+        _defaultZoom = 0.5f;
+        
         UpdateDrawWindow();
     }
 
@@ -101,6 +123,57 @@ public sealed class MapViewerService : IDisposable
         {
             new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _packageReader, _graphicsDevice)
         };
+
+        _drawingComponents[DrawingAspect.Grid] = new List<IDrawingComponent>
+        {
+            new GridDrawingComponent(_coordinateSystem, _graphicsDevice, _puzzle.TileSize)
+        };
+    }
+
+    public void SetLayerEnabled(DrawingAspect aspect, bool enabled)
+    {
+        if (_drawingComponents.TryGetValue(aspect, out var components))
+        {
+            foreach (var component in components)
+            {
+                component.Enabled = enabled;
+            }
+        }
+    }
+
+    public void ResetView()
+    {
+        if (_defaultPosition.HasValue)
+        {
+            _zoom = _defaultZoom;
+            Position = _defaultPosition.Value;
+            ZoomChanged?.Invoke(this, _zoom);
+        }
+    }
+
+    public void FitToWindow()
+    {
+        if (_puzzle == null || _graphicsDevice == null)
+            return;
+
+        var viewport = _graphicsDevice.Viewport;
+        var zoomX = viewport.Width / (float)_puzzle.Width;
+        var zoomY = viewport.Height / (float)_puzzle.Height;
+        
+        Zoom = Math.Min(zoomX, zoomY) * 0.9f;
+        Position = Vector2.Zero;
+    }
+
+    public void JumpToMapCoordinate(Vector2 mapCoord)
+    {
+        if (_coordinateSystem == null)
+            return;
+
+        var screenPoint = _coordinateSystem.MapToScreen(mapCoord);
+        Position = new Vector2(
+            screenPoint.X - _drawWindow.Width / 2,
+            screenPoint.Y - _drawWindow.Height / 2
+        );
     }
 
     private void UpdateDrawWindow()

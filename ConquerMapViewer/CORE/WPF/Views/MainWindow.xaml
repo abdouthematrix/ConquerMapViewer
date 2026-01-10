@@ -1,20 +1,199 @@
-<Window x:Class="ConquerMapViewer.WPF.Views.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="clr-namespace:ConquerMapViewer.WPF.Controls"
-        Title="Conquer Map Viewer" Height="600" Width="800">
+<Window
+    x:Class="ConquerMapViewer.WPF.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:ConquerMapViewer.WPF.Controls"
+    Title="Conquer Map Viewer"
+    Width="1000"
+    Height="700"
+    WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <controls:MapViewerControl x:Name="GameControl" 
-                                   Grid.Row="0"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <StatusBar Grid.Row="1">
+        <!--  Toolbar  -->
+        <ToolBarTray
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.ColumnSpan="2">
+            <ToolBar>
+                <Button
+                    Command="{Binding ResetViewCommand}"
+                    Content="🏠 Reset"
+                    ToolTip="Reset view to default (Home key)" />
+                <Button
+                    Command="{Binding FitToWindowCommand}"
+                    Content="⊞ Fit"
+                    ToolTip="Fit map to window (F key)" />
+                <Separator />
+                <Button
+                    Width="30"
+                    Command="{Binding ZoomInCommand}"
+                    Content="➕"
+                    ToolTip="Zoom in (+/= key)" />
+                <TextBlock
+                    Width="50"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Text="{Binding ZoomPercentage}"
+                    TextAlignment="Center" />
+                <Button
+                    Width="30"
+                    Command="{Binding ZoomOutCommand}"
+                    Content="➖"
+                    ToolTip="Zoom out (- key)" />
+                <Separator />
+                <TextBlock
+                    Margin="5,0"
+                    VerticalAlignment="Center"
+                    Text="FPS:" />
+                <TextBlock
+                    Width="30"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Text="{Binding FPS}" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <!--  Sidebar  -->
+        <Border
+            Grid.Row="1"
+            Grid.Column="0"
+            Background="#F5F5F5"
+            BorderBrush="#CCCCCC"
+            BorderThickness="0,0,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="10">
+                    <!--  Map Search  -->
+                    <TextBlock
+                        Margin="0,0,0,5"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Text="Map Browser" />
+                    <TextBox Margin="0,0,0,5" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="Background" Value="White" />
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <VisualBrush
+                                                    AlignmentX="Left"
+                                                    AlignmentY="Center"
+                                                    Stretch="None">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock
+                                                            Margin="5,0"
+                                                            Foreground="Gray"
+                                                            Text="🔍 Search maps..." />
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!--  Map List  -->
+                    <ListBox
+                        Height="250"
+                        Margin="0,0,0,5"
+                        ItemsSource="{Binding FilteredMaps}"
+                        MouseDoubleClick="MapList_MouseDoubleClick"
+                        SelectedItem="{Binding SelectedMap}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="Gray"
+                                        Text="{Binding Id, StringFormat='ID: {0}'}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Button
+                        Margin="0,0,0,10"
+                        Padding="5"
+                        Command="{Binding LoadMapCommand}"
+                        CommandParameter="{Binding SelectedMap}"
+                        Content="Load Selected Map" />
+
+                    <Separator Margin="0,5" />
+
+                    <!--  Layer Controls  -->
+                    <TextBlock
+                        Margin="0,10,0,5"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Text="Layers" />
+                    <ItemsControl ItemsSource="{Binding Layers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox
+                                    Margin="0,3"
+                                    Content="{Binding Name}"
+                                    IsChecked="{Binding IsEnabled}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Separator Margin="0,10" />
+
+                    <!--  Controls Help  -->
+                    <TextBlock
+                        Margin="0,10,0,5"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Text="Controls" />
+                    <TextBlock
+                        FontSize="11"
+                        Foreground="#666666"
+                        TextWrapping="Wrap">
+                        <Run Text="🖱️ Right-click + drag: Pan" />
+                        <LineBreak />
+                        <Run Text="🖱️ Scroll wheel: Zoom" />
+                        <LineBreak />
+                        <Run Text="⌨️ WASD / Arrows: Pan" />
+                        <LineBreak />
+                        <Run Text="⌨️ Shift + movement: Fast pan" />
+                        <LineBreak />
+                        <Run Text="⌨️ +/-: Zoom in/out" />
+                        <LineBreak />
+                        <Run Text="⌨️ Home/H: Reset view" />
+                        <LineBreak />
+                        <Run Text="⌨️ F: Fit to window" />
+                    </TextBlock>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!--  Map Viewer  -->
+        <controls:MapViewerControl
+            x:Name="GameControl"
+            Grid.Row="1"
+            Grid.Column="1" />
+
+        <!--  Status Bar  -->
+        <StatusBar
+            Grid.Row="2"
+            Grid.Column="0"
+            Grid.ColumnSpan="2">
             <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="{Binding StatusText}"/>
+                <TextBlock Text="{Binding StatusText}" />
             </StatusBarItem>
         </StatusBar>
     </Grid>

@@ -1,3 +1,5 @@
+using ConquerMapViewer.Core.Domain.Entities;
+
 namespace ConquerMapViewer.Core.Interfaces;
 
 public interface IGameMapRepository
