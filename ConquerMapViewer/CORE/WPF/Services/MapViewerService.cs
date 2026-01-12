@@ -126,7 +126,7 @@ public sealed class MapViewerService : IDisposable
 
         _drawingComponents[DrawingAspect.Grid] = new List<IDrawingComponent>
         {
-            new GridDrawingComponent(_coordinateSystem, _graphicsDevice, _puzzle.TileSize)
+            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice)
         };
     }
 

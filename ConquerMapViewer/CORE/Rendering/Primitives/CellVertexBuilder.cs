@@ -39,15 +39,15 @@ public sealed class CellVertexBuilder : IDisposable
         AddLine(location, _cellPoints[2], _cellPoints[3], color);
         AddLine(location, _cellPoints[3], _cellPoints[0], color);
 
-        AddLine(location, _cellPoints[4], _cellPoints[5], color);
-        AddLine(location, _cellPoints[5], _cellPoints[6], color);
-        AddLine(location, _cellPoints[6], _cellPoints[7], color);
-        AddLine(location, _cellPoints[7], _cellPoints[4], color);
+        //AddLine(location, _cellPoints[4], _cellPoints[5], color);
+        //AddLine(location, _cellPoints[5], _cellPoints[6], color);
+        //AddLine(location, _cellPoints[6], _cellPoints[7], color);
+        //AddLine(location, _cellPoints[7], _cellPoints[4], color);
 
-        AddLine(location, _cellPoints[8], _cellPoints[9], color);
-        AddLine(location, _cellPoints[9], _cellPoints[10], color);
-        AddLine(location, _cellPoints[10], _cellPoints[11], color);
-        AddLine(location, _cellPoints[11], _cellPoints[8], color);
+        //AddLine(location, _cellPoints[8], _cellPoints[9], color);
+        //AddLine(location, _cellPoints[9], _cellPoints[10], color);
+        //AddLine(location, _cellPoints[10], _cellPoints[11], color);
+        //AddLine(location, _cellPoints[11], _cellPoints[8], color);
 
         PrimitiveCount += 12;
     }
