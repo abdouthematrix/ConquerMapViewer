@@ -19,17 +19,7 @@ public sealed class IsometricCoordinateSystem
             new Vector2(1, cellDepth / 2),
             new Vector2(cellWidth / 2, 1),
             new Vector2(cellWidth - 1, cellDepth / 2),
-            new Vector2(cellWidth / 2, cellDepth - 1),
-
-            new Vector2(2, cellDepth / 2),
-            new Vector2(cellWidth / 2, 2),
-            new Vector2(cellWidth - 2, cellDepth / 2),
-            new Vector2(cellWidth / 2, cellDepth - 2),
-
-            new Vector2(3, cellDepth / 2),
-            new Vector2(cellWidth / 2, 3),
-            new Vector2(cellWidth - 3, cellDepth / 2),
-            new Vector2(cellWidth / 2, cellDepth - 3)
+            new Vector2(cellWidth / 2, cellDepth - 1)
         };
     }
 

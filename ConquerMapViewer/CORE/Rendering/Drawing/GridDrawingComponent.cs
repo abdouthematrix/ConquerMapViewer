@@ -15,7 +15,7 @@ public class PuzzleGridDrawingComponent : BaseDrawingComponent
     private readonly GraphicsDevice _graphicsDevice;
     private readonly List<GridTile> _gridTiles = new();
     private Texture2D? _pixelTexture;
-    public Color GridColor { get; set; } = Color.Red; //new Color(0, 255, 0, 128); // Semi-transparent green
+    public Color GridColor { get; set; } = new Color(0, 255, 0, 128); // Semi-transparent green
 
     public PuzzleGridDrawingComponent(
         Puzzle puzzle,

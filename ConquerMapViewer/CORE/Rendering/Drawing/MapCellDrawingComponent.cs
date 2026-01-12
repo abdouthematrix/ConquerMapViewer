@@ -1,14 +1,15 @@
-using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Rendering.Coordinates;
-using ConquerMapViewer.Rendering.Primitives;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System.Windows;
-
 namespace ConquerMapViewer.Rendering.Drawing;
 
-public sealed class MapCellDrawingComponent : BaseDrawingComponent
+/// <summary>
+/// Renders map cell outlines in isometric projection
+/// </summary>
+public sealed class MapCellDrawingComponent : BaseDrawingComponent, IDisposable
 {
+    private const int CELL_WIDTH = 64;
+    private const int CELL_HALF_WIDTH = 32;
+    private const int CELL_HEIGHT = 32;
+    private const int CELL_HALF_HEIGHT = 16;
+
     private readonly MapCellCollection _cells;
     private readonly IsometricCoordinateSystem _coordinateSystem;
     private readonly CellVertexBuilder _vertexBuilder;
@@ -25,31 +26,45 @@ public sealed class MapCellDrawingComponent : BaseDrawingComponent
 
     public override void UpdateScreen(Rectangle screenRect)
     {
-        _vertexBuilder.Begin();
+        // Calculate grid bounds for custom isometric layout
+        var numCellsWidth = screenRect.Size.X / CELL_WIDTH + 2;
+        var numCellHeight = screenRect.Size.X / CELL_HEIGHT + 2;
+        var estimatedCells = numCellsWidth * 2 * numCellHeight;
 
-        var numCellsWidth = screenRect.Size.X / 64 + 2;
-        var numCellHeight = screenRect.Size.X / 32 + 2;
-        var xOffset = screenRect.X % 64 + 32;
-        var yOffset = screenRect.Y % 32;
+        _vertexBuilder.Begin(estimatedCells);
+
+        var xOffset = screenRect.X % CELL_WIDTH + CELL_HALF_WIDTH;
+        var yOffset = screenRect.Y % CELL_HEIGHT;
         var drawX = -xOffset;
         var drawY = -yOffset;
 
+        var mapWidth = _cells.CollectionSize.Width;
+        var mapHeight = _cells.CollectionSize.Height;
+        var screenLocX = screenRect.Location.X;
+        var screenLocY = screenRect.Location.Y;
+
         for (var x = 0; x < numCellsWidth * 2; x++)
         {
+            var xBase = x * CELL_HALF_WIDTH + drawX;
+            var yRowOffset = drawY - (x & 1) * CELL_HALF_HEIGHT; // x & 1 is faster than x % 2
+
             for (var y = 0; y < numCellHeight; y++)
             {
+                var yBase = y * CELL_HEIGHT + yRowOffset;
+
                 var screenPos = new Point(
-                    (x * 32 + drawX) + screenRect.Location.X + 32,
-                    (y * 32 + (drawY - (x % 2) * 16)) + screenRect.Location.Y + 16
+                    xBase + screenLocX + CELL_HALF_WIDTH,
+                    yBase + screenLocY + CELL_HALF_HEIGHT
                 );
 
                 var mapCoord = _coordinateSystem.ScreenToMap(screenPos);
 
-                if (mapCoord.X >= 0 && mapCoord.X < _cells.CollectionSize.Width &&
-                    mapCoord.Y >= 0 && mapCoord.Y < _cells.CollectionSize.Height)
+                // Bounds check
+                if (mapCoord.X >= 0 && mapCoord.X < mapWidth &&
+                    mapCoord.Y >= 0 && mapCoord.Y < mapHeight)
                 {
                     var cell = _cells[(int)mapCoord.X, (int)mapCoord.Y];
-                    var cellPos = new Vector2(x * 32 + drawX, y * 32 + (drawY - (x % 2) * 16));
+                    var cellPos = new Vector2(xBase, yBase);
                     _vertexBuilder.AddCell(cellPos, cell.AccessColor);
                 }
             }

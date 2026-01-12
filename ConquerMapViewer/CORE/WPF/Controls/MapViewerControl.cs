@@ -9,7 +9,7 @@ public sealed class MapViewerControl : WpfGame
 {
     private const float ZOOM_SPEED = 0.15f;
     private const float PAN_SPEED = 5.0f;
-    private const float PAN_SPEED_FAST = 15.0f;
+    private const float PAN_SPEED_FAST = 50.0f;
 
     private IGraphicsDeviceService? _graphicsDeviceManager;
     private WpfKeyboard? _keyboard;
