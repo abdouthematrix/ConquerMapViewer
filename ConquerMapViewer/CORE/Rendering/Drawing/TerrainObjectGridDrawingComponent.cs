@@ -7,32 +7,43 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace ConquerMapViewer.Rendering.Drawing;
 
-public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
+/// <summary>
+/// Renders a grid overlay around terrain objects with zoom-aware borders
+/// </summary>
+public sealed class TerrainObjectGridDrawingComponent : BaseDrawingComponent
 {
-    private record struct AnimatedObject(Vector2 Location, List<Texture2D> Frames, int Interval);
+    private record struct GridCell(Rectangle Bounds);
 
     private readonly IList<MapTerrainObject> _terrainObjects;
     private readonly IsometricCoordinateSystem _coordinateSystem;
     private readonly IAniDictionary _aniDictionary;
     private readonly TextureCache _textureCache;
-    private readonly List<AnimatedObject> _visibleObjects = new();
-    private readonly int _startTick = Environment.TickCount;
+    private readonly GraphicsDevice _graphicsDevice;
+    private readonly List<GridCell> _visibleCells = new();
+    private Texture2D? _pixelTexture;
+    private float _currentZoom = 1f;
 
     private const int SCREEN_BUFFER_X = 64;
     private const int SCREEN_BUFFER_Y = 32;
-    private const int MIN_INTERVAL = 1;
-    private static readonly Color TINT_COLOR = new(240, 255, 255, 255);
+    private const float MIN_LINE_THICKNESS = 1f;
 
-    public TerrainObjectDrawingComponent(
+    public Color GridColor { get; set; } = new Color(255, 0, 0, 180); // Semi-transparent red
+
+    public TerrainObjectGridDrawingComponent(
         IList<MapTerrainObject> terrainObjects,
         IsometricCoordinateSystem coordinateSystem,
         IAniDictionary aniDictionary,
-        TextureCache textureCache)
+        TextureCache textureCache,
+        GraphicsDevice graphicsDevice)
     {
         _terrainObjects = terrainObjects;
         _coordinateSystem = coordinateSystem;
         _aniDictionary = aniDictionary;
         _textureCache = textureCache;
+        _graphicsDevice = graphicsDevice;
+
+        _pixelTexture = new Texture2D(_graphicsDevice, 1, 1);
+        _pixelTexture.SetData(new[] { Color.White });
 
         // Preload all ANI files
         var uniqueAniPaths = terrainObjects.Select(t => t.AniPath).Distinct();
@@ -44,7 +55,7 @@ public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
 
     public override void UpdateScreen(Rectangle screenRect)
     {
-        _visibleObjects.Clear();
+        _visibleCells.Clear();
 
         if (!Enabled)
             return;
@@ -61,43 +72,58 @@ public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
                 point.Y - screenRect.Y - terrain.ImageOffset.Y
             );
 
+            // Get the first frame to determine actual dimensions
             if (!_aniDictionary.TryGetFrames(terrain.AniPath, terrain.AniName, out var framePaths) || framePaths.Count == 0)
                 continue;
 
-            var frames = new List<Texture2D>(framePaths.Count);
-            foreach (var framePath in framePaths)
-            {
-                var texture = _textureCache.GetOrLoad(framePath);
-                frames.Add(texture);
-            }
+            // Load first frame to get actual texture dimensions
+            var firstFrameTexture = _textureCache.GetOrLoad(framePaths[0]);
+            var bounds = new Rectangle(
+                (int)location.X,
+                (int)location.Y,
+                firstFrameTexture.Width,
+                firstFrameTexture.Height
+            );
 
-            if (frames.Count > 0)
-            {
-                _visibleObjects.Add(new AnimatedObject(location, frames, Math.Max(MIN_INTERVAL, terrain.Interval)));
-            }
+            _visibleCells.Add(new GridCell(bounds));
         }
     }
 
     public override void Draw(SpriteBatch spriteBatch, Matrix transformMatrix)
     {
-        if (!Enabled)
+        if (_pixelTexture == null || !Enabled)
             return;
 
-        var currentTick = Environment.TickCount - _startTick;
-        
-        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, null, null, null, null, transformMatrix);
-        
-        foreach (var obj in _visibleObjects)
-        {
-            if (obj.Frames.Count == 0)
-                continue;
+        // Extract zoom from transform matrix
+        _currentZoom = transformMatrix.M11; // Assumes uniform scale
 
-            var frameIndex = (currentTick / obj.Interval) % obj.Frames.Count;
-            var currentTexture = obj.Frames[frameIndex];
-            spriteBatch.Draw(currentTexture, obj.Location, TINT_COLOR);
+        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, null, null, null, null, transformMatrix);
+
+        foreach (var cell in _visibleCells)
+        {
+            DrawRectangleOutline(spriteBatch, cell.Bounds, GridColor);
         }
-        
+
         spriteBatch.End();
+    }
+
+    private void DrawRectangleOutline(SpriteBatch spriteBatch, Rectangle rect, Color color)
+    {
+        if (_pixelTexture == null)
+            return;
+
+        // Calculate line thickness that maintains visibility at any zoom level
+        // At low zoom, lines need to be thicker in world space to appear as 1 pixel on screen
+        var lineThickness = (int)Math.Ceiling(MIN_LINE_THICKNESS / _currentZoom);
+
+        // Top
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, rect.Width, lineThickness), color);
+        // Bottom
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y + rect.Height - lineThickness, rect.Width, lineThickness), color);
+        // Left
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, lineThickness, rect.Height), color);
+        // Right
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X + rect.Width - lineThickness, rect.Y, lineThickness, rect.Height), color);
     }
 
     private bool IsInScreenBounds(Vector2 point, Rectangle screenRect, MapPoint imageOffset)
@@ -116,8 +142,8 @@ public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
         {
             if (disposing)
             {
-                _visibleObjects.Clear();
-                // Note: Don't dispose textures as they're managed by TextureCache
+                _pixelTexture?.Dispose();
+                _visibleCells.Clear();
             }
             _disposed = true;
         }

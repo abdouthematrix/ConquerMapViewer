@@ -114,7 +114,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             new LayerViewModel(DrawingAspect.MapCell, "Map Cells", true),
             new LayerViewModel(DrawingAspect.Portals, "Portals", true),
             new LayerViewModel(DrawingAspect.TerrainObject, "Terrain Objects", true),
-            new LayerViewModel(DrawingAspect.Grid, "Grid Overlay", false)
+            new LayerViewModel(DrawingAspect.PuzzleGrid, "Puzzle Grid Overlay", false),
+            new LayerViewModel(DrawingAspect.TerrainObjectGrid, "Terrain Grid Overlay", false)
         };
 
         foreach (var layer in Layers)

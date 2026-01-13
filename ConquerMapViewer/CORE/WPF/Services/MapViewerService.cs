@@ -4,6 +4,7 @@ using ConquerMapViewer.Core.Interfaces;
 using ConquerMapViewer.Core.Services;
 using ConquerMapViewer.Rendering.Coordinates;
 using ConquerMapViewer.Rendering.Drawing;
+using ConquerMapViewer.Rendering.Shared;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -15,6 +16,7 @@ public sealed class MapViewerService : IDisposable
     private readonly IAniDictionary _aniDictionary;
     private readonly IPackageReader _packageReader;
     private GraphicsDevice? _graphicsDevice;
+    private TextureCache? _textureCache;
 
     private MapData? _mapData;
     private Puzzle? _puzzle;
@@ -25,26 +27,19 @@ public sealed class MapViewerService : IDisposable
     private float _zoom = 0.5f;
     private Rectangle _drawWindow;
     private Vector2? _defaultPosition;
-    private float _defaultZoom = 0.5f;
+
+    private const float DEFAULT_ZOOM = 0.5f;
+    private const float MIN_ZOOM = 0.1f;
+    private const float MAX_ZOOM = 5.0f;
+    private const float FIT_ZOOM_PADDING = 0.9f;
+    private const float DEFAULT_POSITION_DIVISOR = 4f;
 
     public Vector2 Position
     {
         get => _position;
         set
         {
-            if (_puzzle != null)
-            {
-                var maxX = Math.Max(0, _puzzle.Width - _drawWindow.Width);
-                var maxY = Math.Max(0, _puzzle.Height - _drawWindow.Height);
-                _position = new Vector2(
-                    Math.Clamp(value.X, 0, maxX),
-                    Math.Clamp(value.Y, 0, maxY)
-                );
-            }
-            else
-            {
-                _position = value;
-            }
+            _position = ClampPosition(value);
             UpdateDrawWindow();
         }
     }
@@ -54,7 +49,7 @@ public sealed class MapViewerService : IDisposable
         get => _zoom;
         set
         {
-            _zoom = Math.Clamp(value, 0.1f, 5.0f);
+            _zoom = Math.Clamp(value, MIN_ZOOM, MAX_ZOOM);
             UpdateDrawWindow();
             ZoomChanged?.Invoke(this, _zoom);
         }
@@ -63,6 +58,7 @@ public sealed class MapViewerService : IDisposable
     public Rectangle DrawWindow => _drawWindow;
     public IsometricCoordinateSystem? CoordinateSystem => _coordinateSystem;
     public Puzzle? Puzzle => _puzzle;
+    public bool IsMapLoaded => _puzzle != null && _mapData != null;
 
     public event EventHandler<float>? ZoomChanged;
 
@@ -79,6 +75,7 @@ public sealed class MapViewerService : IDisposable
     public void SetGraphicsDevice(GraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
+        _textureCache = new TextureCache(_packageReader, _graphicsDevice);
     }
 
     public void LoadMap(string path, int tileSize)
@@ -86,47 +83,59 @@ public sealed class MapViewerService : IDisposable
         if (_graphicsDevice == null)
             throw new InvalidOperationException("GraphicsDevice must be set before loading maps");
 
+        if (_textureCache == null)
+            throw new InvalidOperationException("TextureCache not initialized");
+
         DisposeDrawingComponents();
+
+        // Clear texture cache when loading a new map
+        _textureCache.Clear();
 
         (_mapData, _puzzle) = _mapLoadingService.LoadMap(path, tileSize);
         _coordinateSystem = new IsometricCoordinateSystem(_puzzle, _mapData);
 
         InitializeDrawingComponents();
-        
-        _defaultPosition = new Vector2(_puzzle.Width / 4f, _puzzle.Height / 4f);
-        _defaultZoom = 0.5f;
-        
-        UpdateDrawWindow();
+
+        _defaultPosition = new Vector2(
+            _puzzle.Width / DEFAULT_POSITION_DIVISOR,
+            _puzzle.Height / DEFAULT_POSITION_DIVISOR
+        );
+
+        ResetView();
     }
 
     private void InitializeDrawingComponents()
     {
-        if (_puzzle == null || _mapData == null || _coordinateSystem == null || _graphicsDevice == null)
+        if (_puzzle == null || _mapData == null || _coordinateSystem == null || _textureCache == null)
             return;
-
+        
         _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
         {
-            new PuzzleDrawingComponent(_puzzle, _aniDictionary, _packageReader, _graphicsDevice)
+            new PuzzleDrawingComponent(_puzzle, _aniDictionary, _textureCache)
         };
 
         _drawingComponents[DrawingAspect.MapCell] = new List<IDrawingComponent>
         {
-            new MapCellDrawingComponent(_mapData.Cells, _coordinateSystem, _graphicsDevice)
+            new MapCellDrawingComponent(_mapData.Cells, _coordinateSystem, _graphicsDevice!)
         };
 
         _drawingComponents[DrawingAspect.Portals] = new List<IDrawingComponent>
         {
-            new PortalDrawingComponent(_mapData.Portals, _coordinateSystem, _packageReader, _graphicsDevice)
+            new PortalDrawingComponent(_mapData.Portals, _coordinateSystem, _textureCache)
         };
 
         _drawingComponents[DrawingAspect.TerrainObject] = new List<IDrawingComponent>
         {
-            new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _packageReader, _graphicsDevice)
+            new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache)
         };
 
-        _drawingComponents[DrawingAspect.Grid] = new List<IDrawingComponent>
+        _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
         {
-            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice)
+            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!) { Enabled = false },
+        };
+        _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
+        {
+            new TerrainObjectGridDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache,_graphicsDevice)
         };
     }
 
@@ -137,15 +146,30 @@ public sealed class MapViewerService : IDisposable
             foreach (var component in components)
             {
                 component.Enabled = enabled;
+
+                // Update component when enabling it
+                if (enabled)
+                {
+                    component.UpdateScreen(_drawWindow);
+                }
             }
         }
+    }
+
+    public bool IsLayerEnabled(DrawingAspect aspect)
+    {
+        if (_drawingComponents.TryGetValue(aspect, out var components))
+        {
+            return components.Any(c => c.Enabled);
+        }
+        return false;
     }
 
     public void ResetView()
     {
         if (_defaultPosition.HasValue)
         {
-            _zoom = _defaultZoom;
+            _zoom = DEFAULT_ZOOM;
             Position = _defaultPosition.Value;
             ZoomChanged?.Invoke(this, _zoom);
         }
@@ -159,8 +183,8 @@ public sealed class MapViewerService : IDisposable
         var viewport = _graphicsDevice.Viewport;
         var zoomX = viewport.Width / (float)_puzzle.Width;
         var zoomY = viewport.Height / (float)_puzzle.Height;
-        
-        Zoom = Math.Min(zoomX, zoomY) * 0.9f;
+
+        Zoom = Math.Min(zoomX, zoomY) * FIT_ZOOM_PADDING;
         Position = Vector2.Zero;
     }
 
@@ -171,8 +195,36 @@ public sealed class MapViewerService : IDisposable
 
         var screenPoint = _coordinateSystem.MapToScreen(mapCoord);
         Position = new Vector2(
-            screenPoint.X - _drawWindow.Width / 2,
-            screenPoint.Y - _drawWindow.Height / 2
+            screenPoint.X - _drawWindow.Width / 2f,
+            screenPoint.Y - _drawWindow.Height / 2f
+        );
+    }
+
+    public Vector2? ScreenToMapCoordinate(Vector2 screenPoint)
+    {
+        if (_coordinateSystem == null)
+            return null;
+
+        // Adjust for zoom and position
+        var worldPoint = new Vector2(
+            (screenPoint.X / _zoom) + _position.X,
+            (screenPoint.Y / _zoom) + _position.Y
+        );
+
+        return _coordinateSystem.ScreenToMap(worldPoint);
+    }
+
+    private Vector2 ClampPosition(Vector2 value)
+    {
+        if (_puzzle == null)
+            return value;
+
+        var maxX = Math.Max(0, _puzzle.Width - _drawWindow.Width);
+        var maxY = Math.Max(0, _puzzle.Height - _drawWindow.Height);
+
+        return new Vector2(
+            Math.Clamp(value.X, 0, maxX),
+            Math.Clamp(value.Y, 0, maxY)
         );
     }
 
@@ -187,12 +239,19 @@ public sealed class MapViewerService : IDisposable
             Math.Min(viewport.Height, _puzzle.Height)
         );
 
-        var effectiveWindow = Vector2.Transform(realWindow, Matrix.CreateScale(1 / _zoom));
+        var effectiveWindow = Vector2.Transform(realWindow, Matrix.CreateScale(1f / _zoom));
         _drawWindow = new Rectangle(
-            new Point((int)_position.X, (int)_position.Y),
-            new Point((int)effectiveWindow.X, (int)effectiveWindow.Y)
+            (int)_position.X,
+            (int)_position.Y,
+            (int)effectiveWindow.X,
+            (int)effectiveWindow.Y
         );
 
+        UpdateVisibleComponents();
+    }
+
+    private void UpdateVisibleComponents()
+    {
         foreach (var components in _drawingComponents.Values)
         {
             foreach (var component in components.Where(c => c.Enabled))
@@ -204,9 +263,23 @@ public sealed class MapViewerService : IDisposable
 
     public void Draw(SpriteBatch spriteBatch)
     {
+        if (!IsMapLoaded)
+            return;
+
         var transformMatrix = Matrix.CreateScale(_zoom);
-       
-        foreach (var components in _drawingComponents.Values)
+
+        // Draw in layer order
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Puzzle);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.MapCell);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Portals);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObject);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.PuzzleGrid);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObjectGrid);
+    }
+
+    private void DrawLayer(SpriteBatch spriteBatch, Matrix transformMatrix, DrawingAspect aspect)
+    {
+        if (_drawingComponents.TryGetValue(aspect, out var components))
         {
             foreach (var component in components.Where(c => c.Enabled))
             {
@@ -227,8 +300,24 @@ public sealed class MapViewerService : IDisposable
         _drawingComponents.Clear();
     }
 
+    private bool _disposed;
+
+    private void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                DisposeDrawingComponents();
+                _textureCache?.Dispose();
+            }
+            _disposed = true;
+        }
+    }
+
     public void Dispose()
     {
-        DisposeDrawingComponents();
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

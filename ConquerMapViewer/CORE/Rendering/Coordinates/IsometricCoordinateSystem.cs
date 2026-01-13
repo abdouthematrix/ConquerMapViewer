@@ -29,6 +29,13 @@ public sealed class IsometricCoordinateSystem
             screenPoint.Y / 32f + (_puzzle.Width - screenPoint.X) / 64f
         );
 
+    public Vector2 ScreenToMap(Vector2 screenPoint) =>
+        new(
+            screenPoint.X / 64f + screenPoint.Y / 32f,
+            screenPoint.Y / 32f + (_puzzle.Width - screenPoint.X) / 64f
+        );
+
+
     public Vector2 MapToScreen(Vector2 mapCoordinate)
     {
         var x = (mapCoordinate.X - mapCoordinate.Y) * 32 + _puzzle.Width / 2f;

@@ -15,6 +15,11 @@ public class PuzzleGridDrawingComponent : BaseDrawingComponent
     private readonly GraphicsDevice _graphicsDevice;
     private readonly List<GridTile> _gridTiles = new();
     private Texture2D? _pixelTexture;
+    private float _currentZoom = 1f;
+
+    private const int EXTRA_TILES = 2;
+    private const float MIN_LINE_THICKNESS = 1f;
+
     public Color GridColor { get; set; } = new Color(0, 255, 0, 128); // Semi-transparent green
 
     public PuzzleGridDrawingComponent(
@@ -35,29 +40,28 @@ public class PuzzleGridDrawingComponent : BaseDrawingComponent
         if (!Enabled)
             return;
 
-        var numPiecesX = Math.Min(screenRect.Width / _puzzle.TileSize + 2, _puzzle.HorizontalTiles);
-        var numPiecesY = Math.Min(screenRect.Height / _puzzle.TileSize + 2, _puzzle.VerticalTiles);
-        var startPieceX = screenRect.X / _puzzle.TileSize;
-        var startPieceY = screenRect.Y / _puzzle.TileSize;
-        var offsetX = -screenRect.X % _puzzle.TileSize;
-        var offsetY = -screenRect.Y % _puzzle.TileSize;
+        // Calculate which puzzle tiles are visible
+        var startTileX = Math.Max(0, screenRect.X / _puzzle.TileSize);
+        var startTileY = Math.Max(0, screenRect.Y / _puzzle.TileSize);
+        var endTileX = Math.Min(_puzzle.HorizontalTiles, (screenRect.Right / _puzzle.TileSize) + 1);
+        var endTileY = Math.Min(_puzzle.VerticalTiles, (screenRect.Bottom / _puzzle.TileSize) + 1);
 
-        var drawX = offsetX;
-        var drawY = offsetY;
-
-        for (var x = startPieceX; x < startPieceX + numPiecesX; x++)
+        // Generate grid tiles for visible area
+        for (var tileX = startTileX; tileX < endTileX; tileX++)
         {
-            for (var y = startPieceY; y < startPieceY + numPiecesY; y++)
+            for (var tileY = startTileY; tileY < endTileY; tileY++)
             {
-                if (x < _puzzle.HorizontalTiles && y < _puzzle.VerticalTiles && x >= 0 && y >= 0)
-                {
-                    var bounds = new Rectangle(drawX, drawY, _puzzle.TileSize, _puzzle.TileSize);
-                    _gridTiles.Add(new GridTile(bounds));
-                    drawY += _puzzle.TileSize;
-                }
+                // Calculate world position of this tile
+                var worldX = tileX * _puzzle.TileSize;
+                var worldY = tileY * _puzzle.TileSize;
+
+                // Convert to screen space (relative to screenRect)
+                var screenX = worldX - screenRect.X;
+                var screenY = worldY - screenRect.Y;
+
+                var bounds = new Rectangle(screenX, screenY, _puzzle.TileSize, _puzzle.TileSize);
+                _gridTiles.Add(new GridTile(bounds));
             }
-            drawX += _puzzle.TileSize;
-            drawY = offsetY;
         }
     }
 
@@ -65,6 +69,9 @@ public class PuzzleGridDrawingComponent : BaseDrawingComponent
     {
         if (_pixelTexture == null || !Enabled)
             return;
+
+        // Extract zoom from transform matrix
+        _currentZoom = transformMatrix.M11; // Assumes uniform scale
 
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, null, null, null, null, transformMatrix);
 
@@ -81,14 +88,18 @@ public class PuzzleGridDrawingComponent : BaseDrawingComponent
         if (_pixelTexture == null)
             return;
 
+        // Calculate line thickness that maintains visibility at any zoom level
+        // At low zoom, lines need to be thicker in world space to appear as 1 pixel on screen
+        var lineThickness = (int)Math.Ceiling(MIN_LINE_THICKNESS / _currentZoom);
+
         // Top
-        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, rect.Width, 1), color);
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, rect.Width, lineThickness), color);
         // Bottom
-        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y + rect.Height - 1, rect.Width, 1), color);
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y + rect.Height - lineThickness, rect.Width, lineThickness), color);
         // Left
-        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, 1, rect.Height), color);
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X, rect.Y, lineThickness, rect.Height), color);
         // Right
-        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X + rect.Width - 1, rect.Y, 1, rect.Height), color);
+        spriteBatch.Draw(_pixelTexture, new Rectangle(rect.X + rect.Width - lineThickness, rect.Y, lineThickness, rect.Height), color);
     }
 
     private bool _disposed;
