@@ -74,7 +74,14 @@ public sealed class MapFileLoader : IMapFileLoader
                 PortalType = reader.ReadInt32()
             };
             mapData.Portals.Add(portal);
-            mapData.Cells[(int)portal.Location.X, (int)portal.Location.Y].Access = MapCellAccessType.Portal;
+            try
+            {
+                mapData.Cells[(int)portal.Location.X, (int)portal.Location.Y].Access = MapCellAccessType.Portal;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                Debug.WriteLine("[Dmap] [LoadPortals] Portal location is out of bounds");
+            }
         }
     }
 
@@ -87,11 +94,20 @@ public sealed class MapFileLoader : IMapFileLoader
             switch (objectType)
             {
                 case MapObjectType.Scene:
-                    mapData.Scenes.Add(new MapScene
+                    var scene = new MapScene
                     {
                         ScenePath = ReadAsciiString(reader, 260),
                         Location = ReadPoint(reader)
-                    });
+                    };
+                    mapData.Scenes.Add(scene);
+                    try
+                    {
+                        mapData.Cells[(int)scene.Location.X, (int)scene.Location.Y].Access = MapCellAccessType.Scene;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debug.WriteLine("[Dmap] [LoadObjects] Scene location is out of bounds");
+                    }
                     break;
 
                 case MapObjectType.TerrainObject:
@@ -105,25 +121,49 @@ public sealed class MapFileLoader : IMapFileLoader
                         Interval = reader.ReadInt32()
                     };
                     mapData.TerrainObjects.Add(terrain);
-                    mapData.Cells[(int)terrain.Location.X, (int)terrain.Location.Y].Access = MapCellAccessType.Terrain;
+                    try
+                    {
+                        mapData.Cells[(int)terrain.Location.X, (int)terrain.Location.Y].Access = MapCellAccessType.Terrain;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debug.WriteLine("[Dmap] [LoadObjects] Terrain object location is out of bounds");
+                    }
                     break;
-
                 case MapObjectType.Effect:
-                    mapData.Effects.Add(new Map3DEffect
+                    var effect = new Map3DEffect
                     {
                         Effect = ReadAsciiString(reader, 64),
                         Location = ReadPoint(reader)
-                    });
+                    };
+                    mapData.Effects.Add(effect);
+                    try
+                    {
+                        mapData.Cells[(int)effect.Location.X, (int)effect.Location.Y].Access = MapCellAccessType.Effect;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debug.WriteLine("[Dmap] [LoadObjects] Effect location is out of bounds");
+                    }
                     break;
 
                 case MapObjectType.Sound:
-                    mapData.Sounds.Add(new MapSound
+                    var sound = new MapSound
                     {
                         SoundPath = ReadAsciiString(reader, 260),
                         Location = ReadPoint(reader),
                         Volume = reader.ReadInt32(),
                         Range = reader.ReadInt32()
-                    });
+                    };
+                    mapData.Sounds.Add(sound);
+                    try
+                    {
+                        mapData.Cells[(int)sound.Location.X, (int)sound.Location.Y].Access = MapCellAccessType.Sound;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        Debug.WriteLine("[Dmap] [LoadObjects] Sound location is out of bounds");
+                    }
                     break;
 
                 default:

@@ -9,9 +9,13 @@ public sealed class MapCell
     public Color AccessColor => Access switch
     {
         MapCellAccessType.Accessible => Color.Green,
-        MapCellAccessType.Inaccessible => Color.Black,
+        MapCellAccessType.Inaccessible => Color.Red,
         MapCellAccessType.Portal => Color.Blue,
         MapCellAccessType.Terrain => Color.Yellow,
+        MapCellAccessType.Scene => Color.Purple,
+        MapCellAccessType.Backdrop => Color.Orange,
+        MapCellAccessType.Effect => Color.Cyan,
+        MapCellAccessType.Sound => Color.Magenta,
         _ => Color.White
     };
 }
