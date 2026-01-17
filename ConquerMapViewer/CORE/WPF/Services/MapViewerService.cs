@@ -29,7 +29,7 @@ public sealed class MapViewerService : IDisposable
     private Vector2? _defaultPosition;
 
     private const float DEFAULT_ZOOM = 0.5f;
-    private const float MIN_ZOOM = 0.1f;
+    private const float MIN_ZOOM = 0.01f;
     private const float MAX_ZOOM = 5.0f;
     private const float FIT_ZOOM_PADDING = 0.9f;
     private const float DEFAULT_POSITION_DIVISOR = 4f;
