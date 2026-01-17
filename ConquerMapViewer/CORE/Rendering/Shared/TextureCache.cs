@@ -1,5 +1,5 @@
 using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.Infrastructure.Animation;
+using ConquerMapViewer.Infrastructure.Graphics;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace ConquerMapViewer.Rendering.Shared;
@@ -24,11 +24,19 @@ public sealed class TextureCache : IDisposable
         if (_cache.TryGetValue(path, out var cached))
             return cached;
 
-        using var stream = _packageReader.LoadFile(path);
         var extension = Path.GetExtension(path).ToLowerInvariant();
+        if (extension == ".msk")
+        {
+            path = Path.ChangeExtension(path, ".dds");
+            extension = Path.GetExtension(path).ToLowerInvariant();
+        }
+
+        using var stream = _packageReader.LoadFile(path);        
 
         Texture2D texture = extension == ".dds"
             ? DDSHelper.LoadFromStream(stream, _graphicsDevice)
+            : extension == ".tga"
+            ? TGAHelper.LoadFromStream(stream, _graphicsDevice)
             : Texture2D.FromStream(_graphicsDevice, stream);
 
         _cache[path] = texture;

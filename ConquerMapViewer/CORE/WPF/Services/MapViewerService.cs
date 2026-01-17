@@ -15,6 +15,7 @@ public sealed class MapViewerService : IDisposable
     private readonly MapLoadingService _mapLoadingService;
     private readonly IAniDictionary _aniDictionary;
     private readonly IPackageReader _packageReader;
+    private readonly ISceneFileLoader _sceneFileLoader;
     private GraphicsDevice? _graphicsDevice;
     private TextureCache? _textureCache;
 
@@ -65,11 +66,13 @@ public sealed class MapViewerService : IDisposable
     public MapViewerService(
         MapLoadingService mapLoadingService,
         IAniDictionary aniDictionary,
-        IPackageReader packageReader)
+        IPackageReader packageReader,
+        ISceneFileLoader sceneFileLoader)
     {
         _mapLoadingService = mapLoadingService;
         _aniDictionary = aniDictionary;
         _packageReader = packageReader;
+        _sceneFileLoader = sceneFileLoader;
     }
 
     public void SetGraphicsDevice(GraphicsDevice graphicsDevice)
@@ -149,6 +152,17 @@ public sealed class MapViewerService : IDisposable
             new PortalDrawingComponent(_mapData.Portals, _coordinateSystem, _textureCache)
         };
 
+        _drawingComponents[DrawingAspect.Scene] = new List<IDrawingComponent>
+        {
+            new SceneDrawingComponent(
+                _mapData.Scenes,
+                _coordinateSystem,
+                _aniDictionary,
+                _textureCache,
+                _packageReader,
+                _sceneFileLoader)
+        };
+
         _drawingComponents[DrawingAspect.TerrainObject] = new List<IDrawingComponent>
         {
             new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache)
@@ -158,9 +172,22 @@ public sealed class MapViewerService : IDisposable
         {
             new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!) { Enabled = false },
         };
+
         _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
         {
-            new TerrainObjectGridDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache,_graphicsDevice)
+            new TerrainObjectGridDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache, _graphicsDevice)
+        };
+
+        _drawingComponents[DrawingAspect.SceneGrid] = new List<IDrawingComponent>
+        {
+            new SceneGridDrawingComponent(
+                _mapData.Scenes,
+                _coordinateSystem,
+                _aniDictionary,
+                _textureCache,
+                _packageReader,
+                _sceneFileLoader,
+                _graphicsDevice!) { Enabled = false }
         };
     }
 
@@ -298,9 +325,11 @@ public sealed class MapViewerService : IDisposable
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Puzzle);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.MapCell);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Portals);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Scene);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObject);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.PuzzleGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObjectGrid);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.SceneGrid);
     }
 
     private void DrawLayer(SpriteBatch spriteBatch, Matrix transformMatrix, DrawingAspect aspect)

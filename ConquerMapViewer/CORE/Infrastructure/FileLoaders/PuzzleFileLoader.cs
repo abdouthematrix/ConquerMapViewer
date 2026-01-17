@@ -1,3 +1,6 @@
+using ConquerMapViewer.Infrastructure.Extensions;
+using ConquerMapViewer.Infrastructure.Graphics;
+
 namespace ConquerMapViewer.Infrastructure.FileLoaders;
 
 public sealed class PuzzleFileLoader : IPuzzleFileLoader
@@ -15,8 +18,8 @@ public sealed class PuzzleFileLoader : IPuzzleFileLoader
 
         var puzzle = new Puzzle
         {
-            PuzzleType = ReadAsciiString(reader, 8),
-            AniPath = ReadAsciiString(reader, 256),
+            PuzzleType = reader.ReadASCIIString(8),
+            AniPath = reader.ReadASCIIString(256),
             HorizontalTiles = reader.ReadInt32(),
             VerticalTiles = reader.ReadInt32()
         };
@@ -68,12 +71,5 @@ public sealed class PuzzleFileLoader : IPuzzleFileLoader
 
         // For non-DDS files, we need a GraphicsDevice which we'll get from the game control
         return 0; // Will be detected later when GraphicsDevice is available
-    }
-
-    private static string ReadAsciiString(BinaryReader reader, int length)
-    {
-        var bytes = reader.ReadBytes(length);
-        var nullIndex = Array.IndexOf(bytes, (byte)0);
-        return Encoding.ASCII.GetString(bytes, 0, nullIndex >= 0 ? nullIndex : length);
     }
 }

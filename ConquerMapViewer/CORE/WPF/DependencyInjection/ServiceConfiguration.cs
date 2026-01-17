@@ -53,6 +53,8 @@ public static class ServiceConfiguration
             return new PuzzleFileLoader(settings.ConquerDirectory);
         });
 
+        services.AddSingleton<ISceneFileLoader, SceneFileLoader>();
+
         services.AddSingleton<IGameMapRepository>(sp =>
         {
             var settings = sp.GetRequiredService<AppSettings>();

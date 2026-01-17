@@ -1,4 +1,4 @@
-namespace ConquerMapViewer.Infrastructure.Animation;
+namespace ConquerMapViewer.Infrastructure.Graphics;
 
 public static class DDSHelper
 {

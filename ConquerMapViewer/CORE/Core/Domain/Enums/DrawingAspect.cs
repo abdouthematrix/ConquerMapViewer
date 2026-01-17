@@ -6,7 +6,9 @@ public enum DrawingAspect
     Puzzle,
     MapCell,
     Portals,
+    Scene,
     TerrainObject,
     PuzzleGrid,
-    TerrainObjectGrid
+    SceneGrid,
+    TerrainObjectGrid,
 }

@@ -113,9 +113,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             new LayerViewModel(DrawingAspect.Backdrop, "Backdrop", true),
             new LayerViewModel(DrawingAspect.Puzzle, "Puzzle", true),            
             new LayerViewModel(DrawingAspect.Portals, "Portals", true),
+            new LayerViewModel(DrawingAspect.Scene, "Scene", true),
             new LayerViewModel(DrawingAspect.TerrainObject, "Terrain Objects", true),
             new LayerViewModel(DrawingAspect.MapCell, "Map Cells", false),
             new LayerViewModel(DrawingAspect.PuzzleGrid, "Puzzle Grid Overlay", false),
+            new LayerViewModel(DrawingAspect.SceneGrid, "Scene Grid Overlay", false),
             new LayerViewModel(DrawingAspect.TerrainObjectGrid, "Terrain Grid Overlay", false)
         };
 
