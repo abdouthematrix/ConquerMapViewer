@@ -108,7 +108,32 @@ public sealed class MapViewerService : IDisposable
     {
         if (_puzzle == null || _mapData == null || _coordinateSystem == null || _textureCache == null)
             return;
-        
+
+        // Load backdrops first (they render behind everything)
+        _drawingComponents[DrawingAspect.Backdrop] = new List<IDrawingComponent>();
+
+        if (_mapData.Layers.Count > 0)
+        {
+            foreach (var layer in _mapData.Layers)
+            {
+                foreach (var backdrop in layer.Backdrops)
+                {
+                    // The puzzle is already loaded by MapLoadingService
+                    if (backdrop.Puzzle != null)
+                    {
+                        var component = new BackdropDrawingComponent(
+                            backdrop.Puzzle,
+                            _puzzle,
+                            _aniDictionary,
+                            _textureCache
+                        );
+
+                        _drawingComponents[DrawingAspect.Backdrop].Add(component);
+                    }
+                }
+            }
+        }
+
         _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
         {
             new PuzzleDrawingComponent(_puzzle, _aniDictionary, _textureCache)
@@ -269,6 +294,7 @@ public sealed class MapViewerService : IDisposable
         var transformMatrix = Matrix.CreateScale(_zoom);
 
         // Draw in layer order
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Backdrop);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Puzzle);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.MapCell);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Portals);

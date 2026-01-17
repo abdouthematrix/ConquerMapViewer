@@ -32,6 +32,34 @@ public sealed class MapLoadingService
 
         puzzle.TileSize = tileSize;
 
+        // Load backdrop puzzles for all layers
+        LoadBackdropPuzzles(mapData, tileSize);
+
         return (mapData, puzzle);
+    }
+
+    private void LoadBackdropPuzzles(MapData mapData, int tileSize)
+    {
+        foreach (var layer in mapData.Layers)
+        {
+            foreach (var backdrop in layer.Backdrops)
+            {
+                try
+                {
+                    var backdropPuzzle = _puzzleFileLoader.Load(_packageReader.LoadFile(backdrop.PuzzlePath));
+                    backdropPuzzle.TileSize = tileSize;
+                    backdropPuzzle.HorizontalRate = layer.xInt;
+                    backdropPuzzle.VerticalRate = layer.yInt;
+
+                    // Store the loaded puzzle in the backdrop object
+                    backdrop.Puzzle = backdropPuzzle;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to load backdrop puzzle: {backdrop.PuzzlePath}, Error: {ex.Message}");
+                    // Continue loading other backdrops even if one fails
+                }
+            }
+        }
     }
 }
