@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ConquerMapViewer.Infrastructure.FileLoaders;
 
 public sealed class MapFileLoader : IMapFileLoader
@@ -39,16 +41,25 @@ public sealed class MapFileLoader : IMapFileLoader
     {
         for (var y = 0; y < mapData.Bounds.Height; y++)
         {
+            ulong checksum = 0;
             for (var x = 0; x < mapData.Bounds.Width; x++)
             {
-                mapData.Cells[x, y] = new MapCell
+                var cell = new MapCell
                 {
                     Access = (MapCellAccessType)reader.ReadInt16(),
                     Surface = reader.ReadInt16(),
                     Height = reader.ReadInt16()
                 };
+                mapData.Cells[x, y] = cell;
+
+                // Calculate checksum
+                checksum += (ulong)((int)cell.Access * (cell.Surface + y + 1) +
+                                   (cell.Height + 2) * (x + 1 + cell.Surface));
             }
-            reader.ReadInt32();
+
+            var fileChecksum = reader.ReadUInt32();
+            if (fileChecksum != checksum)
+                Debug.WriteLine("[Dmap] [LoadDataMap] Checksum doesn't match");
         }
     }
 
