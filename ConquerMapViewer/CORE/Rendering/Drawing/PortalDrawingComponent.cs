@@ -17,11 +17,17 @@ public sealed class PortalDrawingComponent : BaseDrawingComponent
     private readonly List<ScreenPortal> _visiblePortals = new();
     private Texture2D? _portalTexture;
 
+    // Animation state
+    private float _animationTime;
+    private const float ROTATION_SPEED = 2f; // Full rotation every 2 seconds
+    private const float FADE_CYCLE_SPEED = 3f; // Fade cycle every 3 seconds
+
     private const string PORTAL_DDS = @"c3/effect/exit.dds";
     private const int IMAGE_OFFSET_X = 128;
     private const int IMAGE_OFFSET_Y = 128;
     private const int SCREEN_BUFFER_X = 64;
     private const int SCREEN_BUFFER_Y = 32;
+    private const float DRAW_SCALE = 2f; // 128x128 texture drawn at 256x256
 
     public PortalDrawingComponent(
         IList<MapPortal> portals,
@@ -61,13 +67,40 @@ public sealed class PortalDrawingComponent : BaseDrawingComponent
         if (_portalTexture == null || !Enabled)
             return;
 
+        // Update animation time (assuming 60fps, increment by deltaTime if available)
+        _animationTime += 0.016f; // ~60fps frame time
+
+        // Calculate rotation (full 360 degree rotation)
+        float rotation = (_animationTime / ROTATION_SPEED) * MathHelper.TwoPi;
+
+        // Calculate fade (smooth sine wave between 0.3 and 1.0 for visibility)
+        float fade = 0.65f + (float)Math.Sin(_animationTime / FADE_CYCLE_SPEED * MathHelper.TwoPi) * 0.35f;
+
+        // Create color with fade applied
+        Color portalColor = Color.White * fade;
+
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, null, null, null, null, transformMatrix);
-        
+
         foreach (var portal in _visiblePortals)
         {
-            spriteBatch.Draw(_portalTexture, portal.Location, Color.White);
+            // Calculate origin (center of texture for rotation)
+            Vector2 origin = new Vector2(_portalTexture.Width / 2f, _portalTexture.Height / 2f);
+
+            // Adjust position to account for origin offset
+            Vector2 drawPosition = portal.Location + origin;
+
+            spriteBatch.Draw(
+                _portalTexture,
+                drawPosition,
+                null,
+                portalColor,
+                rotation,
+                origin,
+                DRAW_SCALE, // scale to 256x256
+                SpriteEffects.None,
+                0f);
         }
-        
+
         spriteBatch.End();
     }
 
