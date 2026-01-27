@@ -114,6 +114,7 @@ public sealed class MapViewerService : IDisposable
 
         // Load backdrops first (they render behind everything)
         _drawingComponents[DrawingAspect.Backdrop] = new List<IDrawingComponent>();
+        _drawingComponents[DrawingAspect.BackdropGrid] = new List<IDrawingComponent>();
 
         if (_mapData.Layers.Count > 0)
         {
@@ -132,6 +133,14 @@ public sealed class MapViewerService : IDisposable
                         );
 
                         _drawingComponents[DrawingAspect.Backdrop].Add(component);
+
+                        var component2 = new BackdropGridDrawingComponent(
+                            backdrop.Puzzle,
+                            _puzzle,                            
+                            _graphicsDevice!
+                        );
+
+                        _drawingComponents[DrawingAspect.BackdropGrid].Add(component2);
                     }
                 }
             }
@@ -170,7 +179,7 @@ public sealed class MapViewerService : IDisposable
 
         _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
         {
-            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!) { Enabled = false },
+            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!)
         };
 
         _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
@@ -187,7 +196,7 @@ public sealed class MapViewerService : IDisposable
                 _textureCache,
                 _packageReader,
                 _sceneFileLoader,
-                _graphicsDevice!) { Enabled = false }
+                _graphicsDevice!)
         };
     }
 
@@ -327,6 +336,7 @@ public sealed class MapViewerService : IDisposable
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Portals);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Scene);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObject);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.BackdropGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.PuzzleGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObjectGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.SceneGrid);

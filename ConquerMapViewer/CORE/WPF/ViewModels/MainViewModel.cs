@@ -116,6 +116,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             new LayerViewModel(DrawingAspect.Scene, "Scene", true),
             new LayerViewModel(DrawingAspect.TerrainObject, "Terrain Objects", true),
             new LayerViewModel(DrawingAspect.MapCell, "Map Cells", false),
+            new LayerViewModel(DrawingAspect.BackdropGrid, "Backdrop Grid Overlay", false),
             new LayerViewModel(DrawingAspect.PuzzleGrid, "Puzzle Grid Overlay", false),
             new LayerViewModel(DrawingAspect.SceneGrid, "Scene Grid Overlay", false),
             new LayerViewModel(DrawingAspect.TerrainObjectGrid, "Terrain Grid Overlay", false)

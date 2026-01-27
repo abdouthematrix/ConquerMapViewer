@@ -8,6 +8,7 @@ public enum DrawingAspect
     Portals,
     Scene,
     TerrainObject,
+    BackdropGrid,
     PuzzleGrid,
     SceneGrid,
     TerrainObjectGrid,
