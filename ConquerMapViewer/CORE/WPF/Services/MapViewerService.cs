@@ -136,7 +136,7 @@ public sealed class MapViewerService : IDisposable
 
                         var component2 = new BackdropGridDrawingComponent(
                             backdrop.Puzzle,
-                            _puzzle,                            
+                            _puzzle,
                             _graphicsDevice!
                         );
 
@@ -197,6 +197,15 @@ public sealed class MapViewerService : IDisposable
                 _packageReader,
                 _sceneFileLoader,
                 _graphicsDevice!)
+        };
+        _drawingComponents[DrawingAspect.Effect] = new List<IDrawingComponent>
+        {
+            new EffectDrawingComponent(_mapData.Effects, _mapData.Cells, _coordinateSystem, _graphicsDevice!)
+        };
+                        
+        _drawingComponents[DrawingAspect.Sound] = new List<IDrawingComponent>
+        {
+           new SoundDrawingComponent(_mapData.Sounds, _mapData.Cells, _coordinateSystem, _graphicsDevice!)   
         };
     }
 
@@ -336,6 +345,8 @@ public sealed class MapViewerService : IDisposable
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Portals);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Scene);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObject);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Effect);
+        DrawLayer(spriteBatch, transformMatrix, DrawingAspect.Sound);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.BackdropGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.PuzzleGrid);
         DrawLayer(spriteBatch, transformMatrix, DrawingAspect.TerrainObjectGrid);

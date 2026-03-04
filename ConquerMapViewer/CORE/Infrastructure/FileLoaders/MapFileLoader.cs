@@ -122,7 +122,7 @@ public sealed class MapFileLoader : IMapFileLoader
                     };
                     mapData.TerrainObjects.Add(terrain);
                     try
-                    {
+                    {                        
                         mapData.Cells[(int)terrain.Location.X, (int)terrain.Location.Y].Access = MapCellAccessType.Terrain;
                     }
                     catch (IndexOutOfRangeException)
@@ -139,7 +139,8 @@ public sealed class MapFileLoader : IMapFileLoader
                     mapData.Effects.Add(effect);
                     try
                     {
-                        mapData.Cells[(int)effect.Location.X, (int)effect.Location.Y].Access = MapCellAccessType.Effect;
+                        var cell = mapData.Cells.World2Cell((int)effect.Location.X, (int)effect.Location.Y);
+                        mapData.Cells[(int)cell.X, (int)cell.Y].Access = MapCellAccessType.Effect;
                     }
                     catch (IndexOutOfRangeException)
                     {
@@ -153,12 +154,14 @@ public sealed class MapFileLoader : IMapFileLoader
                         SoundPath = ReadAsciiString(reader, 260),
                         Location = ReadPoint(reader),
                         Volume = reader.ReadInt32(),
-                        Range = reader.ReadInt32()
+                        Range = reader.ReadInt32(),
+                        Interval = 100//reader.ReadInt32(),
                     };
                     mapData.Sounds.Add(sound);
                     try
                     {
-                        mapData.Cells[(int)sound.Location.X, (int)sound.Location.Y].Access = MapCellAccessType.Sound;
+                        var cell = mapData.Cells.World2Cell((int)sound.Location.X, (int)sound.Location.Y);
+                        mapData.Cells[(int)cell.X, (int)cell.Y].Access = MapCellAccessType.Sound;
                     }
                     catch (IndexOutOfRangeException)
                     {

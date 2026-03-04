@@ -6,4 +6,5 @@ public sealed class MapSound
     public MapPoint Location { get; set; }
     public int Volume { get; set; }
     public int Range { get; set; }
+    public int Interval { get; set; }
 }
