@@ -13,7 +13,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.1" />
-    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4.1" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
     <PackageReference Include="MonoGame.Framework.WpfInterop" Version="1.9.2" />
     <PackageReference Include="SevenZipExtractor" Version="1.0.19" />
   </ItemGroup>
