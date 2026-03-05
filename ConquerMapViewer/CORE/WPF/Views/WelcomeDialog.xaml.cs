@@ -1,8 +1,3 @@
-using System.IO;
-using System.Windows;
-using System.Windows.Forms;
-using MessageBox = System.Windows.MessageBox;
-
 namespace ConquerMapViewer.WPF.Views;
 
 public partial class WelcomeDialog : Window
@@ -16,7 +11,7 @@ public partial class WelcomeDialog : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        using var dialog = new FolderBrowserDialog
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
         {
             Description = "Select your Conquer Online installation directory",
             ShowNewFolderButton = false
@@ -104,7 +99,7 @@ public partial class WelcomeDialog : Window
             }
         }
 
-        MessageBox.Show(
+        System.Windows.MessageBox.Show(
             "Could not find Conquer Online in common locations. Please browse manually.",
             "Not Found",
             MessageBoxButton.OK,

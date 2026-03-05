@@ -1,19 +1,16 @@
-using Microsoft.Win32;
-using System.Windows.Forms;
-
 namespace ConquerMapViewer.WPF.Services;
 
 public sealed class FileDialogService : IFileDialogService
 {
     public string? OpenFolder(string title = "Select Folder")
     {
-        using var dialog = new FolderBrowserDialog
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
         {
             Description = title,
             ShowNewFolderButton = true
         };
 
-        return dialog.ShowDialog() == DialogResult.OK ? dialog.SelectedPath : null;
+        return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.SelectedPath : null;
     }
 
     public string? OpenFile(string title = "Open File", string filter = "All Files (*.*)|*.*")

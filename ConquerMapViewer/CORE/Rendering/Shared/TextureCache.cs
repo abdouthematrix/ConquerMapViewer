@@ -1,7 +1,3 @@
-using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.Infrastructure.Graphics;
-using Microsoft.Xna.Framework.Graphics;
-
 namespace ConquerMapViewer.Rendering.Shared;
 
 /// <summary>

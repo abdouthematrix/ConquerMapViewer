@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace ConquerMapViewer.WPF.Configuration;
 
 public sealed class AppSettingsManager

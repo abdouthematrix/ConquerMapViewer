@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace ConquerMapViewer.Infrastructure.FileLoaders;
 
 public sealed class MapFileLoader : IMapFileLoader

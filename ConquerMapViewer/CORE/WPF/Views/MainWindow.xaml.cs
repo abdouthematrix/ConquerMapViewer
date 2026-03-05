@@ -1,6 +1,3 @@
-using System.Windows;
-using ConquerMapViewer.WPF.ViewModels;
-
 namespace ConquerMapViewer.WPF.Views;
 
 public partial class MainWindow : Window

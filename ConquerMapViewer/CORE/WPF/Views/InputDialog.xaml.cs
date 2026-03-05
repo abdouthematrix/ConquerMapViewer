@@ -1,5 +1,3 @@
-using System.Windows;
-
 namespace ConquerMapViewer.WPF.Views;
 
 public partial class InputDialog : Window

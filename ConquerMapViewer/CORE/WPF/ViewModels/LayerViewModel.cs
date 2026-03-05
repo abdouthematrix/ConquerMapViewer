@@ -1,7 +1,3 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using ConquerMapViewer.Core.Domain.Enums;
-
 namespace ConquerMapViewer.WPF.ViewModels;
 
 public sealed class LayerViewModel : INotifyPropertyChanged

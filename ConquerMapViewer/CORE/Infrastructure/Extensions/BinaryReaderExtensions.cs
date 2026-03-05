@@ -1,5 +1,3 @@
-
-
 namespace ConquerMapViewer.Infrastructure.Extensions;
 
 public static class BinaryReaderExtensions

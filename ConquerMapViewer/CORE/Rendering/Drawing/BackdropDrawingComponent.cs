@@ -1,10 +1,4 @@
-﻿using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.Rendering.Shared;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
-namespace ConquerMapViewer.Rendering.Drawing;
+﻿namespace ConquerMapViewer.Rendering.Drawing;
 
 public sealed class BackdropDrawingComponent : PuzzleDrawingComponent
 {

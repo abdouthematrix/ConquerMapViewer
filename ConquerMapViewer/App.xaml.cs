@@ -1,10 +1,4 @@
-using System.Windows;
 using ConquerMapViewer.WPF.Configuration;
-using ConquerMapViewer.WPF.DependencyInjection;
-using ConquerMapViewer.WPF.Services;
-using ConquerMapViewer.WPF.Views;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace ConquerMapViewer.WPF;
 
@@ -28,7 +22,7 @@ public partial class App : Application
 
                 if (result != true || string.IsNullOrEmpty(welcomeDialog.SelectedDirectory))
                 {
-                    MessageBox.Show(
+                    System.Windows.MessageBox.Show(
                         "Conquer Online directory is required to run the application.",
                         "Configuration Required",
                         MessageBoxButton.OK,
@@ -49,7 +43,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            System.Windows.MessageBox.Show(
                 $"Failed to start application: {ex.Message}\n\nPlease check your configuration and try again.",
                 "Startup Error",
                 MessageBoxButton.OK,

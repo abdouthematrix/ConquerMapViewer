@@ -1,8 +1,4 @@
-﻿using ConquerMapViewer.Infrastructure.Extensions;
-using System.Diagnostics;
-using System.IO;
-
-namespace ConquerMapViewer.Infrastructure.FileLoaders;
+﻿namespace ConquerMapViewer.Infrastructure.FileLoaders;
 
 public sealed class SceneFileLoader : ISceneFileLoader
 {

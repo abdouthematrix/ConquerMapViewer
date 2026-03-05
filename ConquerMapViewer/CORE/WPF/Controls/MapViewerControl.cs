@@ -1,8 +1,3 @@
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using ConquerMapViewer.WPF.ViewModels;
-
 namespace ConquerMapViewer.WPF.Controls;
 
 public sealed class MapViewerControl : WpfGame

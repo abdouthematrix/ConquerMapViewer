@@ -1,8 +1,3 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
 namespace ConquerMapViewer.Rendering.Drawing;
 
 public abstract class BaseDrawingComponent : IDrawingComponent, INotifyPropertyChanged

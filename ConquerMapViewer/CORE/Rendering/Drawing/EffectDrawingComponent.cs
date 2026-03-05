@@ -1,9 +1,4 @@
-﻿using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Rendering.Coordinates;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
-namespace ConquerMapViewer.Rendering.Drawing;
+﻿namespace ConquerMapViewer.Rendering.Drawing;
 
 /// <summary>
 /// Renders Map3DEffect positions as small yellow squares

@@ -1,5 +1,3 @@
-using System.Windows.Input;
-
 namespace ConquerMapViewer.WPF.Commands;
 
 public class RelayCommand : ICommand

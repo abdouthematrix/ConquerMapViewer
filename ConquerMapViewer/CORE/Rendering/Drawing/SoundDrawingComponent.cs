@@ -1,9 +1,4 @@
-﻿using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Rendering.Coordinates;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
-namespace ConquerMapViewer.Rendering.Drawing;
+﻿namespace ConquerMapViewer.Rendering.Drawing;
 
 /// <summary>
 /// Renders MapSound positions as small cyan squares with circular range indicators

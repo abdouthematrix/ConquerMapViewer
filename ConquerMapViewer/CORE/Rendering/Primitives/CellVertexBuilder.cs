@@ -1,8 +1,3 @@
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Rendering.Coordinates;
-
 namespace ConquerMapViewer.Rendering.Primitives;
 
 /// <summary>

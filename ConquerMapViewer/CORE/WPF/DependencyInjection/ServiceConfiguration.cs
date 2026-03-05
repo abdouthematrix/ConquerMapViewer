@@ -1,15 +1,3 @@
-using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.Core.Services;
-using ConquerMapViewer.Infrastructure.Repositories;
-using ConquerMapViewer.WPF.Configuration;
-using ConquerMapViewer.WPF.Services;
-using ConquerMapViewer.WPF.ViewModels;
-using ConquerMapViewer.WPF.Views;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-
 namespace ConquerMapViewer.WPF.DependencyInjection;
 
 public static class ServiceConfiguration

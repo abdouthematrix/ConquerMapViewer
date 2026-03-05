@@ -1,16 +1,3 @@
-using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Core.Domain.Enums;
-using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.WPF.Commands;
-using ConquerMapViewer.WPF.Configuration;
-using ConquerMapViewer.WPF.Services;
-using Microsoft.Extensions.Logging;
-using SharpDX.Direct2D1;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
-
 namespace ConquerMapViewer.WPF.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged

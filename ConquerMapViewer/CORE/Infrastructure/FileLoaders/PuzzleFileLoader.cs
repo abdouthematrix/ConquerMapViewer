@@ -1,6 +1,3 @@
-using ConquerMapViewer.Infrastructure.Extensions;
-using ConquerMapViewer.Infrastructure.Graphics;
-
 namespace ConquerMapViewer.Infrastructure.FileLoaders;
 
 public sealed class PuzzleFileLoader : IPuzzleFileLoader

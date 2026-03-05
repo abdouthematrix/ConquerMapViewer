@@ -1,13 +1,3 @@
-using ConquerMapViewer.Core.Domain.Entities;
-using ConquerMapViewer.Core.Domain.Enums;
-using ConquerMapViewer.Core.Interfaces;
-using ConquerMapViewer.Core.Services;
-using ConquerMapViewer.Rendering.Coordinates;
-using ConquerMapViewer.Rendering.Drawing;
-using ConquerMapViewer.Rendering.Shared;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
 namespace ConquerMapViewer.WPF.ViewModels;
 
 public sealed class MapViewerService : IDisposable
