@@ -20,7 +20,24 @@ public sealed class MapViewerService : IDisposable
     private Vector2? _defaultPosition;
 
     private const float DEFAULT_ZOOM = 0.5f;
-    private const float MIN_ZOOM = 0.01f;
+
+    // Minimum zoom is the level at which the puzzle exactly fills the viewport —
+    // zooming out further would only show empty space beyond the puzzle edge.
+    private float MinZoom
+    {
+        get
+        {
+            if (_puzzle == null || _graphicsDevice == null)
+                return 0.01f;
+
+            var viewport = _graphicsDevice.Viewport;
+            return Math.Max(
+                viewport.Width / (float)_puzzle.Width,
+                viewport.Height / (float)_puzzle.Height
+            );
+        }
+    }
+
     private const float MAX_ZOOM = 5.0f;
     private const float FIT_ZOOM_PADDING = 0.9f;
     private const float DEFAULT_POSITION_DIVISOR = 4f;
@@ -40,7 +57,7 @@ public sealed class MapViewerService : IDisposable
         get => _zoom;
         set
         {
-            _zoom = Math.Clamp(value, MIN_ZOOM, MAX_ZOOM);
+            _zoom = Math.Clamp(value, MinZoom, MAX_ZOOM);
             UpdateDrawWindow();
             ZoomChanged?.Invoke(this, _zoom);
         }
@@ -192,10 +209,10 @@ public sealed class MapViewerService : IDisposable
         {
             new EffectDrawingComponent(_mapData.Effects, _mapData.Cells, _coordinateSystem, _graphicsDevice!)
         };
-                        
+
         _drawingComponents[DrawingAspect.Sound] = new List<IDrawingComponent>
         {
-           new SoundDrawingComponent(_mapData.Sounds, _mapData.Cells, _coordinateSystem, _graphicsDevice!)   
+           new SoundDrawingComponent(_mapData.Sounds, _mapData.Cells, _coordinateSystem, _graphicsDevice!)
         };
     }
 
@@ -300,12 +317,26 @@ public sealed class MapViewerService : IDisposable
         );
 
         var effectiveWindow = Vector2.Transform(realWindow, Matrix.CreateScale(1f / _zoom));
+
+        // Cap at puzzle bounds: when zoomed out far enough to "see" more world-space pixels
+        // than the puzzle has, clamp the window so ClampPosition and all drawing components
+        // never reference coordinates outside the puzzle.
+        var windowW = (int)Math.Min(effectiveWindow.X, _puzzle.Width);
+        var windowH = (int)Math.Min(effectiveWindow.Y, _puzzle.Height);
+
+        // Build the window with the new dimensions first so ClampPosition can use them.
         _drawWindow = new Rectangle(
             (int)_position.X,
             (int)_position.Y,
-            (int)effectiveWindow.X,
-            (int)effectiveWindow.Y
+            windowW,
+            windowH
         );
+
+        // Re-clamp: zoom changes alter the visible window size, which changes the valid
+        // scroll range, so the current position may now be out of bounds.
+        _position = ClampPosition(_position);
+        _drawWindow.X = (int)_position.X;
+        _drawWindow.Y = (int)_position.Y;
 
         UpdateVisibleComponents();
     }
