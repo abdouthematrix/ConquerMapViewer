@@ -15,6 +15,8 @@ public sealed class BackdropDrawingComponent : PuzzleDrawingComponent
         TextureCache textureCache)
         : base(backdropPuzzle, aniDictionary, textureCache)
     {
+        if (mainPuzzle == null)
+            return;
         _mainPuzzle = mainPuzzle;
 
         // Calculate scale to stretch backdrop to fit main puzzle

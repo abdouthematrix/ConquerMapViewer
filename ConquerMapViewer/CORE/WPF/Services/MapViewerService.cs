@@ -11,6 +11,7 @@ public sealed class MapViewerService : IDisposable
 
     private MapData? _mapData;
     private Puzzle? _puzzle;
+    private Pux? _pux;
     private IsometricCoordinateSystem? _coordinateSystem;
     private readonly Dictionary<DrawingAspect, List<IDrawingComponent>> _drawingComponents = new();
 
@@ -27,18 +28,28 @@ public sealed class MapViewerService : IDisposable
     {
         get
         {
-            if (_puzzle == null || _graphicsDevice == null)
+            if (_graphicsDevice == null)
                 return 0.01f;
 
             var viewport = _graphicsDevice.Viewport;
-            return Math.Max(
-                viewport.Width / (float)_puzzle.Width,
-                viewport.Height / (float)_puzzle.Height
-            );
+            if (_pux != null)
+            {
+                return Math.Max(
+                    viewport.Width / (float)_pux.PixelWidth,
+                    viewport.Height / (float)_pux.PixelHeight
+                    );
+            }
+            else
+            {
+                return Math.Max(
+                    viewport.Width / (float)_puzzle.Width,
+                    viewport.Height / (float)_puzzle.Height
+                    );
+            }
         }
     }
 
-    private const float MAX_ZOOM = 5.0f;
+    private const float MAX_ZOOM = 20.0f;
     private const float FIT_ZOOM_PADDING = 0.9f;
     private const float DEFAULT_POSITION_DIVISOR = 4f;
 
@@ -66,7 +77,7 @@ public sealed class MapViewerService : IDisposable
     public Rectangle DrawWindow => _drawWindow;
     public IsometricCoordinateSystem? CoordinateSystem => _coordinateSystem;
     public Puzzle? Puzzle => _puzzle;
-    public bool IsMapLoaded => _puzzle != null && _mapData != null;
+    public bool IsMapLoaded => (_puzzle != null || _pux != null) && _mapData != null;
 
     public event EventHandler<float>? ZoomChanged;
 
@@ -101,22 +112,39 @@ public sealed class MapViewerService : IDisposable
         // Clear texture cache when loading a new map
         _textureCache.Clear();
 
-        (_mapData, _puzzle) = _mapLoadingService.LoadMap(path, tileSize);
-        _coordinateSystem = new IsometricCoordinateSystem(_puzzle, _mapData);
+        (_mapData, _puzzle, _pux) = _mapLoadingService.LoadMap(path, tileSize);
+        if (_puzzle != null)
+        {
+            _coordinateSystem = new IsometricCoordinateSystem(new MapSize(_puzzle.Width,_puzzle.Height), _mapData);
+        }
+        else if (_pux != null)
+        {
+            _coordinateSystem = new IsometricCoordinateSystem(new MapSize(_pux.PixelWidth, _pux.PixelHeight), _mapData);
+        }
 
         InitializeDrawingComponents();
 
-        _defaultPosition = new Vector2(
-            _puzzle.Width / DEFAULT_POSITION_DIVISOR,
-            _puzzle.Height / DEFAULT_POSITION_DIVISOR
-        );
+        if (_puzzle != null)
+        {
+            _defaultPosition = new Vector2(
+                _puzzle.Width / DEFAULT_POSITION_DIVISOR,
+                _puzzle.Height / DEFAULT_POSITION_DIVISOR
+                );
+        }
+        else if (_pux != null)
+        {
+            _defaultPosition = new Vector2(
+                _pux.PixelWidth / DEFAULT_POSITION_DIVISOR,
+                _pux.PixelHeight / DEFAULT_POSITION_DIVISOR
+                );
+        }        
 
         ResetView();
     }
 
     private void InitializeDrawingComponents()
     {
-        if (_puzzle == null || _mapData == null || _coordinateSystem == null || _textureCache == null)
+        if (_mapData == null || _coordinateSystem == null || _textureCache == null)
             return;
 
         // Load backdrops first (they render behind everything)
@@ -152,11 +180,20 @@ public sealed class MapViewerService : IDisposable
                 }
             }
         }
-
-        _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
+        if (_puzzle != null)
         {
-            new PuzzleDrawingComponent(_puzzle, _aniDictionary, _textureCache)
-        };
+            _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
+            {
+                new PuzzleDrawingComponent(_puzzle, _aniDictionary, _textureCache)
+            };
+        }
+        else if (_pux != null)
+        {
+            _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
+            {
+                new PuxDrawingComponent(_pux, _aniDictionary, _textureCache)
+            };
+        }
 
         _drawingComponents[DrawingAspect.MapCell] = new List<IDrawingComponent>
         {
@@ -184,10 +221,16 @@ public sealed class MapViewerService : IDisposable
             new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache)
         };
 
-        _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
+        if (_puzzle != null)
         {
-            new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!)
-        };
+            _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
+            {
+                new PuzzleGridDrawingComponent(_puzzle, _graphicsDevice!)
+            };
+        }
+        else if (_pux != null)
+        { 
+        }
 
         _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
         {
@@ -254,14 +297,24 @@ public sealed class MapViewerService : IDisposable
 
     public void FitToWindow()
     {
-        if (_puzzle == null || _graphicsDevice == null)
+        if (_graphicsDevice == null)
             return;
 
         var viewport = _graphicsDevice.Viewport;
-        var zoomX = viewport.Width / (float)_puzzle.Width;
-        var zoomY = viewport.Height / (float)_puzzle.Height;
+        var zoomX = 0f;
+        var zoomY = 0f;
+        if (_puzzle != null)
+        {
+            zoomX = viewport.Width / (float)_puzzle.Width;
+            zoomY = viewport.Height / (float)_puzzle.Height;
+        }
+        else if (_pux != null)
+        {
+            zoomX = viewport.Width / (float)_pux.PixelWidth;
+            zoomY = viewport.Height / (float)_pux.PixelHeight;
+        }
 
-        Zoom = Math.Min(zoomX, zoomY) * FIT_ZOOM_PADDING;
+        Zoom = Math.Min(zoomX, zoomY) * FIT_ZOOM_PADDING;        
         Position = Vector2.Zero;
     }
 
@@ -293,11 +346,18 @@ public sealed class MapViewerService : IDisposable
 
     private Vector2 ClampPosition(Vector2 value)
     {
-        if (_puzzle == null)
-            return value;
-
-        var maxX = Math.Max(0, _puzzle.Width - _drawWindow.Width);
-        var maxY = Math.Max(0, _puzzle.Height - _drawWindow.Height);
+        var maxX = 0;
+        var maxY = 0;
+        if (_puzzle != null)
+        {
+            maxX = Math.Max(0, _puzzle.Width - _drawWindow.Width);
+            maxY = Math.Max(0, _puzzle.Height - _drawWindow.Height);
+        }
+        else if (_pux != null)
+        {
+            maxX = Math.Max(0, _pux.PixelWidth - _drawWindow.Width);
+            maxY = Math.Max(0, _pux.PixelHeight - _drawWindow.Height);
+        }
 
         return new Vector2(
             Math.Clamp(value.X, 0, maxX),
@@ -307,24 +367,37 @@ public sealed class MapViewerService : IDisposable
 
     private void UpdateDrawWindow()
     {
-        if (_puzzle == null || _coordinateSystem == null || _graphicsDevice == null)
+        if (_coordinateSystem == null || _graphicsDevice == null)
             return;
 
         var viewport = _graphicsDevice.Viewport;
+
+        int sourceWidth, sourceHeight;
+        if (_puzzle != null)
+        {
+            sourceWidth = _puzzle.Width;
+            sourceHeight = _puzzle.Height;
+        }
+        else if (_pux != null)
+        {
+            sourceWidth = _pux.PixelWidth;
+            sourceHeight = _pux.PixelHeight;
+        }
+        else
+        {
+            return; // nothing to draw
+        }
+
         var realWindow = new Vector2(
-            Math.Min(viewport.Width, _puzzle.Width),
-            Math.Min(viewport.Height, _puzzle.Height)
+            Math.Min(viewport.Width, sourceWidth),
+            Math.Min(viewport.Height, sourceHeight)
         );
 
         var effectiveWindow = Vector2.Transform(realWindow, Matrix.CreateScale(1f / _zoom));
 
-        // Cap at puzzle bounds: when zoomed out far enough to "see" more world-space pixels
-        // than the puzzle has, clamp the window so ClampPosition and all drawing components
-        // never reference coordinates outside the puzzle.
-        var windowW = (int)Math.Min(effectiveWindow.X, _puzzle.Width);
-        var windowH = (int)Math.Min(effectiveWindow.Y, _puzzle.Height);
+        var windowW = (int)Math.Min(effectiveWindow.X, sourceWidth);
+        var windowH = (int)Math.Min(effectiveWindow.Y, sourceHeight);
 
-        // Build the window with the new dimensions first so ClampPosition can use them.
         _drawWindow = new Rectangle(
             (int)_position.X,
             (int)_position.Y,
@@ -332,14 +405,13 @@ public sealed class MapViewerService : IDisposable
             windowH
         );
 
-        // Re-clamp: zoom changes alter the visible window size, which changes the valid
-        // scroll range, so the current position may now be out of bounds.
         _position = ClampPosition(_position);
         _drawWindow.X = (int)_position.X;
         _drawWindow.Y = (int)_position.Y;
 
         UpdateVisibleComponents();
     }
+
 
     private void UpdateVisibleComponents()
     {

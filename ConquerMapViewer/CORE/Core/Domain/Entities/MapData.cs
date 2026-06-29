@@ -12,4 +12,7 @@ public sealed class MapData
     public List<MapSound> Sounds { get; set; } = new();
     public List<Map3DEffect> Effects { get; set; } = new();
     public List<MapLayer> Layers { get; set; } = new();
+
+    // Terrain section handles (FUN_00d204b7 section A)
+    public List<int> TerrainHandles { get; } = new();
 }

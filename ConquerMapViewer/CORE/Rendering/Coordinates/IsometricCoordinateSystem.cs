@@ -2,11 +2,11 @@ namespace ConquerMapViewer.Rendering.Coordinates;
 
 public sealed class IsometricCoordinateSystem
 {
-    private readonly Puzzle _puzzle;
+    private readonly MapSize _puzzle;
     private readonly MapData _mapData;
     public Vector2[] CellPoints { get; }
 
-    public IsometricCoordinateSystem(Puzzle puzzle, MapData mapData)
+    public IsometricCoordinateSystem(MapSize puzzle, MapData mapData)
     {
         _puzzle = puzzle;
         _mapData = mapData;

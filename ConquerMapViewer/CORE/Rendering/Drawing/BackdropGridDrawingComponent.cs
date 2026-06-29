@@ -17,6 +17,8 @@ public class BackdropGridDrawingComponent : PuzzleGridDrawingComponent
         GraphicsDevice graphicsDevice)
         : base(backdropPuzzle, graphicsDevice)
     {
+        if (mainPuzzle == null)
+            return;
         _mainPuzzle = mainPuzzle;
 
         // Calculate scale to match backdrop stretching

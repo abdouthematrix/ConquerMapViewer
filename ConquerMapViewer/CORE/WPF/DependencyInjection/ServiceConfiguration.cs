@@ -1,3 +1,5 @@
+using ConquerMono.Map.FileLoaders;
+
 namespace ConquerMapViewer.WPF.DependencyInjection;
 
 public static class ServiceConfiguration
@@ -57,6 +59,8 @@ public static class ServiceConfiguration
 
             return new GameMapRepository(gameMapPath);
         });
+
+        services.AddSingleton<IOtherDataFileLoader, OtherDataFileLoader>();
 
         // Application services
         services.AddSingleton<MapLoadingService>();

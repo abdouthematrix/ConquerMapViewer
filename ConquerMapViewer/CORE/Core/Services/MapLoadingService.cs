@@ -5,38 +5,89 @@ public sealed class MapLoadingService
     private readonly IPackageReader _packageReader;
     private readonly IMapFileLoader _mapFileLoader;
     private readonly IPuzzleFileLoader _puzzleFileLoader;
+    private readonly IOtherDataFileLoader _otherDataFileLoader;
 
     public MapLoadingService(
         IPackageReader packageReader,
         IMapFileLoader mapFileLoader,
-        IPuzzleFileLoader puzzleFileLoader)
+        IPuzzleFileLoader puzzleFileLoader,
+        IOtherDataFileLoader otherDataFileLoader)
+
     {
         _packageReader = packageReader;
         _mapFileLoader = mapFileLoader;
         _puzzleFileLoader = puzzleFileLoader;
+        _otherDataFileLoader = otherDataFileLoader;
     }
 
-    public (MapData MapData, Puzzle Puzzle) LoadMap(string path, int tileSize)
+    public (MapData MapData, Puzzle Puzzle, Pux Pux) LoadMap(string path, int tileSize)
     {
-        var mapData = _mapFileLoader.Load(_packageReader.LoadFile(path));
+        bool isNewFormat = DetectNewFormat(path);
+        var otherData = TryLoadOtherData(path);
+
+        using var mapstream = _packageReader.LoadFile(path);
+        var mapData = _mapFileLoader.Load(mapstream,
+            isNewFormat,
+            otherData);
         mapData.Cells.CellDepth = 32;
         mapData.Cells.CellWidth = 64;
 
-        var puzzle = _puzzleFileLoader.Load(_packageReader.LoadFile(mapData.PuzzlePath));
-        var puzzleTileSize = _puzzleFileLoader.GetTileSize(puzzle, _packageReader);
-
-        if (puzzleTileSize != tileSize && puzzleTileSize != 0)
+        using var puzzlesteam = _packageReader.LoadFile(mapData.PuzzlePath);
+        var puzzlefile = _puzzleFileLoader.Load(mapData.PuzzlePath, puzzlesteam);
+        if (puzzlefile.Puzzle != null)
         {
-            tileSize = puzzleTileSize;
+            var puzzleTileSize = _puzzleFileLoader.GetTileSize(puzzlefile.Puzzle, _packageReader);
+
+            if (puzzleTileSize != tileSize && puzzleTileSize != 0)
+            {
+                tileSize = puzzleTileSize;
+            }
+
+            puzzlefile.Puzzle.TileSize = tileSize;
         }
+        if (puzzlefile.Pux != null)
+        {
+            var puxTileSize = _puzzleFileLoader.GetTileSize(puzzlefile.Pux, _packageReader);
 
-        puzzle.TileSize = tileSize;
+            if (puxTileSize != tileSize && puxTileSize != 0)
+            {
+                tileSize = puxTileSize;
+            }
 
+            puzzlefile.Pux.TileSize = tileSize;
+        }
         // Load backdrop puzzles for all layers
         LoadBackdropPuzzles(mapData, tileSize);
 
-        return (mapData, puzzle);
+        return (mapData, puzzlefile.Puzzle, puzzlefile.Pux);
     }
+
+    // ── Format detection (FUN_00d2070b) ──────────────────────────────────────
+    // Copy 4 chars before last '.' → _stricmp "_new"
+    private static bool DetectNewFormat(string path)
+    {
+        int dot = path.LastIndexOf('.');
+        return dot >= 4 &&
+               path.Substring(dot - 4, 4)
+                   .Equals("_new", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── OtherData side-channel (FUN_00d21d57 / FUN_005d260b) ─────────────────
+    private MapOtherData? TryLoadOtherData(string mapPath)
+    {
+        try
+        {
+            using var s = _packageReader.LoadFile(mapPath + ".OtherData");
+            return s is null ? null
+                 : _otherDataFileLoader.Load(s, layerCount: int.MaxValue);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[OtherData] {mapPath}.OtherData: {ex.Message}");
+            return null;
+        }
+    }
+
 
     private void LoadBackdropPuzzles(MapData mapData, int tileSize)
     {
@@ -46,13 +97,13 @@ public sealed class MapLoadingService
             {
                 try
                 {
-                    var backdropPuzzle = _puzzleFileLoader.Load(_packageReader.LoadFile(backdrop.PuzzlePath));
-                    backdropPuzzle.TileSize = tileSize;
-                    backdropPuzzle.HorizontalRate = layer.xInt;
-                    backdropPuzzle.VerticalRate = layer.yInt;
+                    var backdropPuzzle = _puzzleFileLoader.Load(backdrop.PuzzlePath,_packageReader.LoadFile(backdrop.PuzzlePath));
+                    backdropPuzzle.Puzzle.TileSize = tileSize;
+                    backdropPuzzle.Puzzle.HorizontalRate = layer.xInt;
+                    backdropPuzzle.Puzzle.VerticalRate = layer.yInt;
 
                     // Store the loaded puzzle in the backdrop object
-                    backdrop.Puzzle = backdropPuzzle;
+                    backdrop.Puzzle = backdropPuzzle.Puzzle;
                 }
                 catch (Exception ex)
                 {
@@ -63,3 +114,4 @@ public sealed class MapLoadingService
         }
     }
 }
+
