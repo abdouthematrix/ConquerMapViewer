@@ -148,8 +148,15 @@ public sealed class PuzzleFileLoader : IPuzzleFileLoader
 
         using var aniStream = new FileStream(aniPath, FileMode.Open);
         var ani = new AniParser().Parse(aniStream);
-
-        var tile = puzzle.Tiles[0, 0];
+        var tile = -1;
+        foreach (var _tile in puzzle.Tiles)
+        {
+            if (_tile != -1)
+            {
+                tile = _tile;
+                break;
+            }
+        }
         if (tile == -1)
             return 0;
 
@@ -172,7 +179,34 @@ public sealed class PuzzleFileLoader : IPuzzleFileLoader
 
     public int GetTileSize(Pux pux, IPackageReader packageReader)
     {
+        foreach (var item in pux.TileUnits)
+        {
+            if (item.Assignments.Count > 0)
+            {
+                var g = pux.TerrainGroups[item.Assignments[0].TileId];
+                if (string.IsNullOrEmpty(g.Name2)) continue;
 
+                var aniPath = Path.Combine(_conquerDirectory, g.Name2);
+                if (!File.Exists(aniPath))
+                    return 0;
+                using var aniStream = new FileStream(aniPath, FileMode.Open);
+                var ani = new AniParser().Parse(aniStream);
+
+                var aniPuzzleKey = g.Name3;
+                var frames = ani.GetFrames(aniPuzzleKey);
+                if (frames.Count == 0)
+                    return 0;
+
+                using var textureStream = packageReader.LoadFile(frames[0]);
+                var extension = Path.GetExtension(frames[0]).ToLowerInvariant();
+
+                if (extension == ".dds")
+                {
+                    return DDSHelper.GetWidth(textureStream);
+                }
+
+            }
+        }
         foreach (var g in pux.TerrainGroups)
         {
             if (string.IsNullOrEmpty(g.Name2)) continue;

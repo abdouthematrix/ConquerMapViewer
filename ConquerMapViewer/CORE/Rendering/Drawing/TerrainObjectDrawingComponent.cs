@@ -2,7 +2,7 @@ namespace ConquerMapViewer.Rendering.Drawing;
 
 public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
 {
-    private record struct AnimatedObject(Vector2 Location, List<Texture2D> Frames, int Interval, MapPoint CellLocation);
+    private record struct AnimatedObject(Vector2 Location, List<Texture2D> Frames, int Interval, MapPoint CellLocation, int Width, int Height);
 
     private readonly IList<MapTerrainObject> _terrainObjects;
     private readonly IsometricCoordinateSystem _coordinateSystem;
@@ -66,7 +66,9 @@ public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
 
             if (frames.Count > 0)
             {
-                _visibleObjects.Add(new AnimatedObject(location, frames, Math.Max(MIN_INTERVAL, terrain.Interval), terrain.Location));
+                var width = terrain.PicWidth > 0 ? terrain.PicWidth : frames[0].Width;
+                var height = terrain.PicHeight > 0 ? terrain.PicHeight : frames[0].Height;
+                _visibleObjects.Add(new AnimatedObject(location, frames, Math.Max(MIN_INTERVAL, terrain.Interval), terrain.Location, width, height));
             }
         }
 
@@ -96,7 +98,8 @@ public sealed class TerrainObjectDrawingComponent : BaseDrawingComponent
 
             var frameIndex = (currentTick / obj.Interval) % obj.Frames.Count;
             var currentTexture = obj.Frames[frameIndex];
-            spriteBatch.Draw(currentTexture, obj.Location, TINT_COLOR);
+            var destRect = new Rectangle((int)obj.Location.X, (int)obj.Location.Y, obj.Width, obj.Height);
+            spriteBatch.Draw(currentTexture, destRect, TINT_COLOR);
         }
 
         spriteBatch.End();

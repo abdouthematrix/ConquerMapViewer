@@ -77,9 +77,10 @@ public sealed class MapLoadingService
     {
         try
         {
-            using var s = _packageReader.LoadFile(mapPath + ".OtherData");
+            var basePath = Path.ChangeExtension(mapPath, null); // "map/map/newplain_new"
+            using var s = _packageReader.LoadFile(basePath + ".OtherData");
             return s is null ? null
-                 : _otherDataFileLoader.Load(s, layerCount: int.MaxValue);
+                 : _otherDataFileLoader.Load(s);
         }
         catch (Exception ex)
         {
@@ -97,8 +98,16 @@ public sealed class MapLoadingService
             {
                 try
                 {
-                    var backdropPuzzle = _puzzleFileLoader.Load(backdrop.PuzzlePath, _packageReader.LoadFile(backdrop.PuzzlePath));
-                    backdropPuzzle.Puzzle.TileSize = tileSize;
+                    var stream = _packageReader.LoadFile(backdrop.PuzzlePath);
+                    var backdropPuzzle = _puzzleFileLoader.Load(backdrop.PuzzlePath, stream);
+                    // Detect tile size from the backdrop's own ANI/DDS, 
+                    // not from the parent map's PUX tile size
+                    var backdropTileSize = _puzzleFileLoader.GetTileSize(
+                        backdropPuzzle.Puzzle, _packageReader);
+
+                    backdropPuzzle.Puzzle.TileSize = backdropTileSize > 0
+                        ? backdropTileSize
+                        : tileSize;  // fallback to map tile size
 
                     // layer.RateX / layer.RateY are the CSceneLayer parallax move rates.
                     // They are not stored on the Puzzle (Puzzle.RollSpeedX/Y is the scroll

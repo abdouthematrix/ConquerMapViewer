@@ -10,26 +10,20 @@ using IniSections = Dictionary<string, Dictionary<string, string>>;
 // ─────────────────────────────────────────────────────────────────────────────
 public class OtherDataFileLoader : IOtherDataFileLoader
 {
-    public MapOtherData Load(Stream stream, int layerCount)
+    public MapOtherData Load(Stream stream)
     {
         var result = new MapOtherData();
         var sections = ParseIni(stream);
 
-        for (int i = 0; i < layerCount; i++)
-        {
-            TryLoadSceneLayer(sections, i, result);
-            TryLoadTerrainLayer(sections, i, result);
-            TryLoadInteractiveLayer(sections, i, result);
+        if (!sections.TryGetValue("Header", out var hdr)) return result;
 
-            // Stop when no section of any type exists for this index
-            if (!sections.ContainsKey($"SceneLayer{i}") &&
-                !sections.ContainsKey($"TerrainLayer{i}") &&
-                !sections.ContainsKey($"TerrainLayerPicSize{i}") &&
-                !sections.ContainsKey($"InteractiveLayer{i}") &&
-                !sections.ContainsKey($"InteractiveLayerPicSize{i}") &&
-                i > 0)
-                break;
-        }
+        int sceneLayers = Get(hdr, "SenceLayerAmount", 0);
+        int terrainLayers = Get(hdr, "TerrainLayerAmount", 0);
+        int interactiveLayers = Get(hdr, "InteractiveLayerAmount", 0);
+
+        for (int i = 0; i < sceneLayers; i++) TryLoadSceneLayer(sections, i, result);
+        for (int i = 0; i < terrainLayers; i++) TryLoadTerrainLayer(sections, i, result);
+        for (int i = 0; i < interactiveLayers; i++) TryLoadInteractiveLayer(sections, i, result);
 
         return result;
     }

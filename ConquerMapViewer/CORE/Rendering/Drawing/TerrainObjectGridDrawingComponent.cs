@@ -5,7 +5,7 @@ namespace ConquerMapViewer.Rendering.Drawing;
 /// </summary>
 public sealed class TerrainObjectGridDrawingComponent : BaseDrawingComponent
 {
-    private record struct GridCell(Rectangle Bounds);
+    private record struct GridCell(Rectangle Bounds,bool Interactive);
 
     private readonly IList<MapTerrainObject> _terrainObjects;
     private readonly IsometricCoordinateSystem _coordinateSystem;
@@ -69,16 +69,18 @@ public sealed class TerrainObjectGridDrawingComponent : BaseDrawingComponent
             if (!_aniDictionary.TryGetFrames(terrain.AniPath, terrain.AniName, out var framePaths) || framePaths.Count == 0)
                 continue;
 
-            // Load first frame to get actual texture dimensions
+            // Load first frame to get fallback texture dimensions
             var firstFrameTexture = _textureCache.GetOrLoad(framePaths[0]);
+            var width = terrain.PicWidth > 0 ? terrain.PicWidth : firstFrameTexture.Width;
+            var height = terrain.PicHeight > 0 ? terrain.PicHeight : firstFrameTexture.Height;
             var bounds = new Rectangle(
                 (int)location.X,
                 (int)location.Y,
-                firstFrameTexture.Width,
-                firstFrameTexture.Height
+                width,
+                height
             );
 
-            _visibleCells.Add(new GridCell(bounds));
+            _visibleCells.Add(new GridCell(bounds, terrain.Interactive));
         }
     }
 
@@ -94,7 +96,8 @@ public sealed class TerrainObjectGridDrawingComponent : BaseDrawingComponent
 
         foreach (var cell in _visibleCells)
         {
-            DrawRectangleOutline(spriteBatch, cell.Bounds, GridColor);
+            var color = cell.Interactive ? GridColor : Color.Blue;
+            DrawRectangleOutline(spriteBatch, cell.Bounds, color);
         }
 
         spriteBatch.End();
