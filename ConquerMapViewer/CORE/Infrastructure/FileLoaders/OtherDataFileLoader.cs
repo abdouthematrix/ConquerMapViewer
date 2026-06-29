@@ -3,7 +3,7 @@ namespace ConquerMono.Map.FileLoaders;
 using IniSections = Dictionary<string, Dictionary<string, string>>;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MapOtherDataLoader
+// OtherDataFileLoader
 //
 // Parses the ".OtherData" named sub-stream from a .dmap container.
 // Format: INI-style plain text (sections [Name], key=value pairs).
@@ -24,7 +24,9 @@ public class OtherDataFileLoader : IOtherDataFileLoader
             // Stop when no section of any type exists for this index
             if (!sections.ContainsKey($"SceneLayer{i}") &&
                 !sections.ContainsKey($"TerrainLayer{i}") &&
+                !sections.ContainsKey($"TerrainLayerPicSize{i}") &&
                 !sections.ContainsKey($"InteractiveLayer{i}") &&
+                !sections.ContainsKey($"InteractiveLayerPicSize{i}") &&
                 i > 0)
                 break;
         }
@@ -52,49 +54,69 @@ public class OtherDataFileLoader : IOtherDataFileLoader
     }
 
     // ── TerrainLayer  (FUN_00d22686) ─────────────────────────────────────────
+    // FIX: PicSizes are loaded independently — [TerrainLayer{i}] need not exist.
+    // Many maps ship only [TerrainLayerPicSize{i}] with no main section.
     private void TryLoadTerrainLayer(IniSections s, int i, MapOtherData r)
     {
-        if (!s.TryGetValue($"TerrainLayer{i}", out var kv)) return;
-        var d = new MapOtherData.TerrainLayerData
-        {
-            Alpha = Get(kv, "Alpha", 0xFF),
-            Light = Get(kv, "Light", 0x80),
-            Red = Get(kv, "Red", 0xFF),
-            Green = Get(kv, "Green", 0xFF),
-            Blue = Get(kv, "Blue", 0xFF),
-        };
-        for (int j = 0; kv.ContainsKey($"MapObjIndex{j}"); j++)
-            d.ObjRefs.Add(Get(kv, $"MapObjIndex{j}", -1));
+        bool hasMain = s.TryGetValue($"TerrainLayer{i}", out var kv);
+        bool hasPicSize = s.TryGetValue($"TerrainLayerPicSize{i}", out var pv);
+        if (!hasMain && !hasPicSize) return;
 
-        if (s.TryGetValue($"TerrainLayerPicSize{i}", out var pv))
+        var d = hasMain
+            ? new MapOtherData.TerrainLayerData
+            {
+                Alpha = Get(kv, "Alpha", 0xFF),
+                Light = Get(kv, "Light", 0x80),
+                Red = Get(kv, "Red", 0xFF),
+                Green = Get(kv, "Green", 0xFF),
+                Blue = Get(kv, "Blue", 0xFF),
+            }
+            : new MapOtherData.TerrainLayerData();
+
+        if (hasMain)
+            for (int j = 0; kv.ContainsKey($"MapObjIndex{j}"); j++)
+                d.ObjRefs.Add(Get(kv, $"MapObjIndex{j}", -1));
+
+        if (hasPicSize)
             ReadPicSizes(pv, d.PicSizes);
 
         r.TerrainLayers[i] = d;
     }
 
     // ── InteractiveLayer  (FUN_00d21e87) ─────────────────────────────────────
+    // FIX 1: gate used hdr.ContainsKey("InteractiveLayer{i}") but the Header
+    //        section stores "InteractiveLayerAmount=N", not per-index keys.
+    //        Now reads the count and checks i against it.
+    // FIX 2: PicSizes are loaded independently — [InteractiveLayer{i}] need
+    //        not exist; [InteractiveLayerPicSize{i}] alone is sufficient.
     private void TryLoadInteractiveLayer(IniSections s, int i, MapOtherData r)
     {
         if (!s.TryGetValue("Header", out var hdr)) return;
-        if (!hdr.ContainsKey($"InteractiveLayer{i}")) return;
+        if (Get(hdr, "InteractiveLayerAmount", 0) <= i) return;
 
-        if (!s.TryGetValue($"InteractiveLayer{i}", out var kv)) return;
-        var d = new MapOtherData.InteractiveLayerData
-        {
-            Width = Get(kv, "Width", 0),
-            Height = Get(kv, "Height", 0),
-        };
-        for (int j = 0; kv.ContainsKey($"MapObjIndex{j}"); j++)
-            d.ObjRefs.Add(Get(kv, $"MapObjIndex{j}", -1));
+        bool hasMain = s.TryGetValue($"InteractiveLayer{i}", out var kv);
+        bool hasPicSize = s.TryGetValue($"InteractiveLayerPicSize{i}", out var pv);
+        if (!hasMain && !hasPicSize) return;
 
-        if (s.TryGetValue($"InteractiveLayerPicSize{i}", out var pv))
+        var d = hasMain
+            ? new MapOtherData.InteractiveLayerData
+            {
+                Width = Get(kv, "Width", 0),
+                Height = Get(kv, "Height", 0),
+            }
+            : new MapOtherData.InteractiveLayerData();
+
+        if (hasMain)
+            for (int j = 0; kv.ContainsKey($"MapObjIndex{j}"); j++)
+                d.ObjRefs.Add(Get(kv, $"MapObjIndex{j}", -1));
+
+        if (hasPicSize)
             ReadPicSizes(pv, d.PicSizes);
 
         r.InteractiveLayers[i] = d;
     }
 
-    private void ReadPicSizes(Dictionary<string, string> kv,
-        List<(int, int, int)> list)
+    private void ReadPicSizes(Dictionary<string, string> kv, List<(int, int, int)> list)
     {
         for (int j = 0; kv.ContainsKey($"MapObjIndex{j}"); j++)
         {

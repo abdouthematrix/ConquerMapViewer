@@ -1,14 +1,12 @@
 namespace ConquerMapViewer.Core.Domain.Entities;
 
-public struct MapLayer
+public class MapLayer
 {
-    public int index;
-    public int layertype;
-    public int xInt;
-    public int yInt;
+    public int Index;
+    public int Type;
+    public int RateX;
+    public int RateY;
     public List<MapBackdrop> Backdrops;
-    public List<MapTerrainObject> TerrainObjects;
-    
 
     public int Alpha { get; set; }
     public int ColorR { get; set; }

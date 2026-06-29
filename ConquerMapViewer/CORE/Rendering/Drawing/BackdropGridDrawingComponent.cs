@@ -1,71 +1,72 @@
 namespace ConquerMapViewer.Rendering.Drawing;
 
 /// <summary>
-/// Renders a grid overlay for the backdrop puzzle with proper scaling and parallax
+/// Renders a grid overlay for the backdrop puzzle with proper scaling and parallax.
+/// Parallax matches the formula used by CSceneLayer::Show() in the original C++ engine.
 /// </summary>
 public class BackdropGridDrawingComponent : PuzzleGridDrawingComponent
 {
-    private const int HORIZONTAL_RATE_DIVISOR = 3;
-    private const int VERTICAL_RATE_DIVISOR = 8;
-
-    private readonly Puzzle _mainPuzzle;
+    private readonly MapSize _mainPuzzle;
     private readonly Matrix _scaleMatrix;
+
+    // Layer-level parallax rates (0–100), matching CSceneLayer::GetMoveRateX/Y().
+    // Must be identical to those given to the paired BackdropDrawingComponent so
+    // that the grid overlay stays aligned with the rendered backdrop tiles.
+    private readonly int _moveRateX;
+    private readonly int _moveRateY;
 
     public BackdropGridDrawingComponent(
         Puzzle backdropPuzzle,
-        Puzzle mainPuzzle,
-        GraphicsDevice graphicsDevice)
+        MapSize mainPuzzle,
+        GraphicsDevice graphicsDevice,
+        int moveRateX = 100,
+        int moveRateY = 100)
         : base(backdropPuzzle, graphicsDevice)
     {
-        if (mainPuzzle == null)
-            return;
         _mainPuzzle = mainPuzzle;
+        _moveRateX = moveRateX;
+        _moveRateY = moveRateY;
 
-        // Calculate scale to match backdrop stretching
+        // Same scale as BackdropDrawingComponent so the grid lines sit on top of
+        // the stretched backdrop tiles at exactly the right positions.
         var scaleX = (float)_mainPuzzle.Width / _puzzle.Width;
         var scaleY = (float)_mainPuzzle.Height / _puzzle.Height;
         _scaleMatrix = Matrix.CreateScale(scaleX, scaleY, 1f);
 
-        // Use a different color to distinguish from main puzzle grid
         GridColor = new Color(255, 0, 255, 128); // Semi-transparent magenta
     }
 
     public override void UpdateScreen(Rectangle screenRect)
     {
-        // Calculate parallax offset (same as BackdropDrawingComponent)
-        var offsetX = screenRect.X;
-        var offsetY = screenRect.Y;
+        // Identical parallax calculation to BackdropDrawingComponent.UpdateScreen().
+        // Both components must receive the same moveRateX/Y values so the grid
+        // overlay is always pixel-perfect over the backdrop tiles.
 
-        if (_puzzle.HorizontalRate.HasValue && _puzzle.HorizontalRate.Value != 0)
-        {
-            var divisor = _puzzle.HorizontalRate.Value / HORIZONTAL_RATE_DIVISOR;
-            if (divisor != 0)
-            {
-                offsetX /= divisor;
-            }
-        }
+        float mainMapCenterX = _mainPuzzle.Width / 2f;
+        float mainMapCenterY = _mainPuzzle.Height / 2f;
 
-        if (_puzzle.VerticalRate.HasValue && _puzzle.VerticalRate.Value != 0)
-        {
-            var divisor = _puzzle.VerticalRate.Value / VERTICAL_RATE_DIVISOR;
-            if (divisor != 0)
-            {
-                offsetY /= divisor;
-            }
-        }
+        float viewCenterX = screenRect.X + screenRect.Width / 2f;
+        float viewCenterY = screenRect.Y + screenRect.Height / 2f;
 
-        // Transform screen rect to backdrop space
-        var scaleX = (float)_puzzle.Width / _mainPuzzle.Width;
-        var scaleY = (float)_puzzle.Height / _mainPuzzle.Height;
+        float offsetX = viewCenterX - mainMapCenterX;
+        float offsetY = viewCenterY - mainMapCenterY;
+
+        float parallaxCenterX = mainMapCenterX + offsetX * _moveRateX / 100f;
+        float parallaxCenterY = mainMapCenterY + offsetY * _moveRateY / 100f;
+
+        float parallaxViewX = parallaxCenterX - screenRect.Width / 2f;
+        float parallaxViewY = parallaxCenterY - screenRect.Height / 2f;
+
+        float invScaleX = (float)_puzzle.Width / _mainPuzzle.Width;
+        float invScaleY = (float)_puzzle.Height / _mainPuzzle.Height;
 
         var backdropRect = new Rectangle(
-            (int)(offsetX * scaleX),
-            (int)(offsetY * scaleY),
-            (int)(screenRect.Width * scaleX),
-            (int)(screenRect.Height * scaleY)
+            (int)(parallaxViewX * invScaleX),
+            (int)(parallaxViewY * invScaleY),
+            (int)(screenRect.Width * invScaleX),
+            (int)(screenRect.Height * invScaleY)
         );
 
-        // Let the base class handle grid generation in backdrop space
         base.UpdateScreen(backdropRect);
     }
 
@@ -74,10 +75,8 @@ public class BackdropGridDrawingComponent : PuzzleGridDrawingComponent
         if (!Enabled)
             return;
 
-        // Combine scale matrix with transform (same as BackdropDrawingComponent)
         var combinedTransform = _scaleMatrix * transformMatrix;
 
-        // Let the base class handle the actual drawing with the combined transform
         base.Draw(spriteBatch, combinedTransform);
     }
 }

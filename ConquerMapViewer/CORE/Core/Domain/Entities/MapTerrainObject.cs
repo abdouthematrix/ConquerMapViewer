@@ -9,7 +9,7 @@ public sealed class MapTerrainObject
     public MapPoint ImageOffset { get; set; }
     public int Interval { get; set; }
     /// <summary>_new format only — 16-bit (local_1a4 &amp; 0xFFFF).</summary>
-    public ushort SubFlags { get; set; }
+    public ushort ShowWay { get; set; }
 
     public int PicWidth { get; set; }
     public int PicHeight { get; set; }

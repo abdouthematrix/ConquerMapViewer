@@ -115,7 +115,7 @@ public sealed class MapViewerService : IDisposable
         (_mapData, _puzzle, _pux) = _mapLoadingService.LoadMap(path, tileSize);
         if (_puzzle != null)
         {
-            _coordinateSystem = new IsometricCoordinateSystem(new MapSize(_puzzle.Width,_puzzle.Height), _mapData);
+            _coordinateSystem = new IsometricCoordinateSystem(new MapSize(_puzzle.Width, _puzzle.Height), _mapData);
         }
         else if (_pux != null)
         {
@@ -137,7 +137,7 @@ public sealed class MapViewerService : IDisposable
                 _pux.PixelWidth / DEFAULT_POSITION_DIVISOR,
                 _pux.PixelHeight / DEFAULT_POSITION_DIVISOR
                 );
-        }        
+        }
 
         ResetView();
     }
@@ -160,19 +160,29 @@ public sealed class MapViewerService : IDisposable
                     // The puzzle is already loaded by MapLoadingService
                     if (backdrop.Puzzle != null)
                     {
+                        MapSize mapsize = new MapSize();
+                        if (_puzzle != null)
+                            mapsize = new MapSize(_puzzle.Width, _puzzle.Height);
+                        else if (_pux != null)
+                            mapsize = new MapSize(_pux.PixelWidth, _pux.PixelHeight);
+
                         var component = new BackdropDrawingComponent(
                             backdrop.Puzzle,
-                            _puzzle,
+                            mapsize,
                             _aniDictionary,
-                            _textureCache
+                            _textureCache,
+                            layer.RateX,
+                            layer.RateY
                         );
 
                         _drawingComponents[DrawingAspect.Backdrop].Add(component);
 
                         var component2 = new BackdropGridDrawingComponent(
                             backdrop.Puzzle,
-                            _puzzle,
-                            _graphicsDevice!
+                            mapsize,
+                            _graphicsDevice!,
+                            layer.RateX,
+                            layer.RateY
                         );
 
                         _drawingComponents[DrawingAspect.BackdropGrid].Add(component2);
@@ -229,7 +239,7 @@ public sealed class MapViewerService : IDisposable
             };
         }
         else if (_pux != null)
-        { 
+        {
         }
 
         _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
@@ -314,7 +324,7 @@ public sealed class MapViewerService : IDisposable
             zoomY = viewport.Height / (float)_pux.PixelHeight;
         }
 
-        Zoom = Math.Min(zoomX, zoomY) * FIT_ZOOM_PADDING;        
+        Zoom = Math.Min(zoomX, zoomY) * FIT_ZOOM_PADDING;
         Position = Vector2.Zero;
     }
 

@@ -42,8 +42,8 @@ public sealed class PuzzleFileLoader : IPuzzleFileLoader
 
             if (puzzle.PuzzleType == "PUZZLE2")
             {
-                puzzle.HorizontalRate = reader.ReadInt32();
-                puzzle.VerticalRate = reader.ReadInt32();
+                puzzle.RollSpeedX = reader.ReadInt32();
+                puzzle.RollSpeedY = reader.ReadInt32();
             }
 
             return (puzzle, null);

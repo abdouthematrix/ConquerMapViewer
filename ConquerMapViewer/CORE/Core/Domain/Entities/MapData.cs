@@ -2,7 +2,8 @@ namespace ConquerMapViewer.Core.Domain.Entities;
 
 public sealed class MapData
 {
-    public string DMapHeader { get; set; } = string.Empty;
+    public uint DMapVersion { get; set; }
+    public uint DMapData { get; set; }
     public string PuzzlePath { get; set; } = string.Empty;
     public MapSize Bounds { get; set; }
     public MapCellCollection Cells { get; set; } = null!;

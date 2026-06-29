@@ -97,12 +97,14 @@ public sealed class MapLoadingService
             {
                 try
                 {
-                    var backdropPuzzle = _puzzleFileLoader.Load(backdrop.PuzzlePath,_packageReader.LoadFile(backdrop.PuzzlePath));
+                    var backdropPuzzle = _puzzleFileLoader.Load(backdrop.PuzzlePath, _packageReader.LoadFile(backdrop.PuzzlePath));
                     backdropPuzzle.Puzzle.TileSize = tileSize;
-                    backdropPuzzle.Puzzle.HorizontalRate = layer.xInt;
-                    backdropPuzzle.Puzzle.VerticalRate = layer.yInt;
 
-                    // Store the loaded puzzle in the backdrop object
+                    // layer.RateX / layer.RateY are the CSceneLayer parallax move rates.
+                    // They are not stored on the Puzzle (Puzzle.RollSpeedX/Y is the scroll
+                    // animation speed, an unrelated field). The rates are consumed directly
+                    // by BackdropDrawingComponent via MapViewerService.InitializeDrawingComponents().
+
                     backdrop.Puzzle = backdropPuzzle.Puzzle;
                 }
                 catch (Exception ex)
@@ -114,4 +116,3 @@ public sealed class MapLoadingService
         }
     }
 }
-
