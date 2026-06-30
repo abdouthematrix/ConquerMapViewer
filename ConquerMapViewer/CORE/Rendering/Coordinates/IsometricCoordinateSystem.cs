@@ -23,17 +23,19 @@ public sealed class IsometricCoordinateSystem
         };
     }
 
-    public Vector2 ScreenToMap(Point screenPoint) =>
-        new(
-            screenPoint.X / 64f + screenPoint.Y / 32f,
-            screenPoint.Y / 32f + (_puzzle.Width - screenPoint.X) / 64f
-        );
+    public Vector2 ScreenToMap(Point screenPoint)
+    {
+        var a = (screenPoint.X - _puzzle.Width / 2f) / 32f;
+        var b = (screenPoint.Y - _puzzle.Height / 2f) / 16f + (_mapData.Bounds.Height - 1);
+        return new Vector2((b + a) / 2f, (b - a) / 2f);
+    }
 
-    public Vector2 ScreenToMap(Vector2 screenPoint) =>
-        new(
-            screenPoint.X / 64f + screenPoint.Y / 32f,
-            screenPoint.Y / 32f + (_puzzle.Width - screenPoint.X) / 64f
-        );
+    public Vector2 ScreenToMap(Vector2 screenPoint)
+    {
+        var a = (screenPoint.X - _puzzle.Width / 2f) / 32f;
+        var b = (screenPoint.Y - _puzzle.Height / 2f) / 16f + (_mapData.Bounds.Height - 1);
+        return new Vector2((b + a) / 2f, (b - a) / 2f);
+    }
 
 
     public Vector2 MapToScreen(Vector2 mapCoordinate)

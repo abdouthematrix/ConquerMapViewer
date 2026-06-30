@@ -133,8 +133,11 @@ public sealed class MapFileLoader : IMapFileLoader
                 case MapObjectType.TerrainObject://MAP_COVER
                     {
                         var terrain = ReadMapTerrainObject(reader, isNewFormat);
-                        mapData.TerrainObjects.Add(terrain);
-                        TrySetAccess(mapData, (int)terrain.Location.X, (int)terrain.Location.Y, MapCellAccessType.Terrain);
+                        if (!string.IsNullOrEmpty(terrain.AniPath))
+                        {
+                            mapData.TerrainObjects.Add(terrain);
+                            TrySetAccess(mapData, (int)terrain.Location.X, (int)terrain.Location.Y, MapCellAccessType.Terrain);
+                        }
                         break;
                     }
                 case MapObjectType.Effect://MAP_3DEFFECT
