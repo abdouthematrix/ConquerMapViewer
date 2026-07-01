@@ -113,9 +113,9 @@ public sealed class MapFileLoader : IMapFileLoader
         for (var i = 0; i < objectCount; i++)
         {
             var objectType = (MapObjectType)reader.ReadInt32();
-            if (objectType == 0)            
+            if (objectType == 0)
                 objectType = (MapObjectType)reader.ReadInt32();
-            
+
             switch (objectType)
             {
                 case MapObjectType.Scene://MAP_TERRAIN
@@ -155,7 +155,7 @@ public sealed class MapFileLoader : IMapFileLoader
                             SoundPath = ReadAsciiString(reader, 260),
                             Location = ReadPoint(reader),
                             Range = reader.ReadInt32(),
-                            Volume = reader.ReadInt32(),                            
+                            Volume = reader.ReadInt32(),
                             Interval = 100
                         };
                         mapData.Sounds.Add(sound);
@@ -179,6 +179,7 @@ public sealed class MapFileLoader : IMapFileLoader
             var layer = new MapLayer
             {
                 Backdrops = new List<MapBackdrop>(),
+                TerrainObjects = new List<MapTerrainObject>(),
             };
             for (var i = 0; i < count; i++)
                 ReadLayerObject(reader, mapData, layer, isNewFormat);
@@ -186,12 +187,13 @@ public sealed class MapFileLoader : IMapFileLoader
         }
 
         // classic layered block — present in both formats
-        var layerCount = reader.ReadInt32();        
+        var layerCount = reader.ReadInt32();
         for (var i = 0; i < layerCount; i++)
         {
             var layer = new MapLayer
             {
                 Backdrops = new List<MapBackdrop>(),
+                TerrainObjects = new List<MapTerrainObject>(),
             };
             layer.Index = reader.ReadInt32();
             layer.Type = reader.ReadInt32();
@@ -229,21 +231,17 @@ public sealed class MapFileLoader : IMapFileLoader
         switch (objectType)
         {
             case MapObjectType.MAP_SCENE:
-                //layer.TerrainObjects.Add(ReadMapTerrainObject(reader, isNewFormat));
-                mapData.TerrainObjects.Add(ReadMapTerrainObject(reader, isNewFormat));
+            case MapObjectType.TerrainObject:
+            case MapObjectType.TerrainSectionCover:
+                layer.TerrainObjects.Add(ReadMapTerrainObject(reader, isNewFormat));
                 break;
+
             case MapObjectType.Backdrop://MAP_PUZZLE
                 layer.Backdrops.Add(new MapBackdrop
                 {
                     PuzzlePath = ReadAsciiString(reader, 260)
                 });
                 break;
-            
-            case MapObjectType.TerrainObject:
-            case MapObjectType.TerrainSectionCover:
-                mapData.TerrainObjects.Add(ReadMapTerrainObject(reader, isNewFormat));
-                break;
-
             case MapObjectType.Effect3DNew:
             case MapObjectType.Effect:
                 {
@@ -353,15 +351,18 @@ public sealed class MapFileLoader : IMapFileLoader
     //        ApplyPicSize's (uint) guard safely ignores negative relative indices.
     private static void ApplyOtherData(MapData map, MapOtherData od, bool isNewFormat)
     {
-        // Layers[0] in a new-format map is the synthetic flat layer.
-        var flatLayer = isNewFormat && map.Layers.Count > 0 ? map.Layers[0] : null;
-        int flatOffset = map.TerrainObjects.Count;
+        // Classic terrain objects: loaded by LoadObjects → map.TerrainObjects
+        // Flat-layer terrain objects: loaded by LoadLayers (new-format only) → map.Layers[0].TerrainObjects
+        var classicObjects = map.TerrainObjects;
+        var flatObjects = isNewFormat && map.Layers.Count > 0
+            ? map.Layers[0].TerrainObjects
+            : null;
 
         int maxI = new[]
         {
             map.Layers.Count,
-            od.SceneLayers.Count      > 0 ? od.SceneLayers.Keys.Max()      + 1 : 0,
-            od.TerrainLayers.Count    > 0 ? od.TerrainLayers.Keys.Max()    + 1 : 0,
+            od.SceneLayers.Count       > 0 ? od.SceneLayers.Keys.Max()       + 1 : 0,
+            od.TerrainLayers.Count     > 0 ? od.TerrainLayers.Keys.Max()     + 1 : 0,
             od.InteractiveLayers.Count > 0 ? od.InteractiveLayers.Keys.Max() + 1 : 0,
         }.Max();
 
@@ -385,22 +386,17 @@ public sealed class MapFileLoader : IMapFileLoader
                     layer.Alpha = tl.Alpha; layer.Light = tl.Light;
                     layer.ColorR = tl.Red; layer.ColorG = tl.Green; layer.ColorB = tl.Blue;
                 }
+                // TerrainLayer PicSizes index into classic terrain objects
                 foreach (var (idx, w, h) in tl.PicSizes)
-                {
-                    ApplyPicSize(map.TerrainObjects, idx, w, h, interactive: false);
-                    if (flatLayer != null)
-                        ApplyPicSize(map.TerrainObjects, idx - flatOffset, w, h, interactive: false);
-                }
+                    ApplyPicSize(classicObjects, idx, w, h, interactive: false);
             }
 
             if (od.InteractiveLayers.TryGetValue(i, out var il))
             {
-                foreach (var (idx, w, h) in il.PicSizes)
-                {
-                    ApplyPicSize(map.TerrainObjects, idx, w, h, interactive: true);
-                    if (flatLayer != null)
-                        ApplyPicSize(map.TerrainObjects, idx - flatOffset, w, h, interactive: true);
-                }
+                // InteractiveLayer PicSizes index into flat-layer terrain objects
+                if (flatObjects != null)
+                    foreach (var (idx, w, h) in il.PicSizes)
+                        ApplyPicSize(flatObjects, idx, w, h, interactive: true);
             }
         }
     }

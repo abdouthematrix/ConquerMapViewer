@@ -150,14 +150,16 @@ public sealed class MapViewerService : IDisposable
         // Load backdrops first (they render behind everything)
         _drawingComponents[DrawingAspect.Backdrop] = new List<IDrawingComponent>();
         _drawingComponents[DrawingAspect.BackdropGrid] = new List<IDrawingComponent>();
+        _drawingComponents[DrawingAspect.TerrainObject] = new List<IDrawingComponent>();
+        _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>();
 
         if (_mapData.Layers.Count > 0)
         {
             foreach (var layer in _mapData.Layers)
             {
+                // Backdrop puzzles
                 foreach (var backdrop in layer.Backdrops)
                 {
-                    // The puzzle is already loaded by MapLoadingService
                     if (backdrop.Puzzle != null)
                     {
                         MapSize mapsize = new MapSize();
@@ -174,7 +176,6 @@ public sealed class MapViewerService : IDisposable
                             layer.RateX,
                             layer.RateY
                         );
-
                         _drawingComponents[DrawingAspect.Backdrop].Add(component);
 
                         var component2 = new BackdropGridDrawingComponent(
@@ -184,12 +185,52 @@ public sealed class MapViewerService : IDisposable
                             layer.RateX,
                             layer.RateY
                         );
-
                         _drawingComponents[DrawingAspect.BackdropGrid].Add(component2);
                     }
                 }
+
+                // Layer terrain objects (flat new-format layer + classic layer terrain objects)
+                if (layer.TerrainObjects.Count > 0)
+                {
+                    _drawingComponents[DrawingAspect.TerrainObject].Add(
+                        new TerrainObjectDrawingComponent(
+                            layer.TerrainObjects,
+                            _coordinateSystem,
+                            _aniDictionary,
+                            _textureCache));
+
+                    _drawingComponents[DrawingAspect.TerrainObjectGrid].Add(
+                        new TerrainObjectGridDrawingComponent(
+                            layer.TerrainObjects,
+                            _coordinateSystem,
+                            _aniDictionary,
+                            _textureCache,
+                            _graphicsDevice!)
+                        { GridColor = new Color(255, 165, 0, 180) });  // orange
+                    
+                }
             }
         }
+
+        // Classic terrain objects from LoadObjects (non-layer)
+        if (_mapData.TerrainObjects.Count > 0)
+        {
+            _drawingComponents[DrawingAspect.TerrainObject].Add(
+                new TerrainObjectDrawingComponent(
+                    _mapData.TerrainObjects,
+                    _coordinateSystem,
+                    _aniDictionary,
+                    _textureCache));
+
+            _drawingComponents[DrawingAspect.TerrainObjectGrid].Add(
+                new TerrainObjectGridDrawingComponent(
+                    _mapData.TerrainObjects,
+                    _coordinateSystem,
+                    _aniDictionary,
+                    _textureCache,
+                    _graphicsDevice!));
+        }
+
         if (_puzzle != null)
         {
             _drawingComponents[DrawingAspect.Puzzle] = new List<IDrawingComponent>
@@ -226,11 +267,6 @@ public sealed class MapViewerService : IDisposable
                 _sceneFileLoader)
         };
 
-        _drawingComponents[DrawingAspect.TerrainObject] = new List<IDrawingComponent>
-        {
-            new TerrainObjectDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache)
-        };
-
         if (_puzzle != null)
         {
             _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
@@ -240,12 +276,11 @@ public sealed class MapViewerService : IDisposable
         }
         else if (_pux != null)
         {
+            _drawingComponents[DrawingAspect.PuzzleGrid] = new List<IDrawingComponent>
+            {
+                new PuxGridDrawingComponent(_pux, _graphicsDevice!)
+            };
         }
-
-        _drawingComponents[DrawingAspect.TerrainObjectGrid] = new List<IDrawingComponent>
-        {
-            new TerrainObjectGridDrawingComponent(_mapData.TerrainObjects, _coordinateSystem, _aniDictionary, _textureCache, _graphicsDevice)
-        };
 
         _drawingComponents[DrawingAspect.SceneGrid] = new List<IDrawingComponent>
         {

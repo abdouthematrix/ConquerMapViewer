@@ -48,12 +48,6 @@ public sealed class MapLoadingService
         if (puzzlefile.Pux != null)
         {
             var puxTileSize = _puzzleFileLoader.GetTileSize(puzzlefile.Pux, _packageReader);
-
-            if (puxTileSize != tileSize && puxTileSize != 0)
-            {
-                tileSize = puxTileSize;
-            }
-
             puzzlefile.Pux.TileSize = tileSize;
         }
         // Load backdrop puzzles for all layers

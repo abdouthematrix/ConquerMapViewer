@@ -68,8 +68,8 @@ public sealed class PuxDrawingComponent : BaseDrawingComponent, IDisposable
         _tiles.Clear();
         if (!Enabled || TileSize == 0) return;
 
-        int numX = Math.Min(sr.Width / TileSize + EXTRA, _pux.Width);
-        int numY = Math.Min(sr.Height / TileSize + EXTRA, _pux.Height);
+        int numX = Math.Min(sr.Width / TileSize + EXTRA + _pux.TilePixelWidth / TileSize, _pux.Width);
+        int numY = Math.Min(sr.Height / TileSize + EXTRA + _pux.TilePixelHeight / TileSize, _pux.Height);
         int sx = sr.X / TileSize;
         int sy = sr.Y / TileSize;
         int offX = -(sr.X % TileSize);

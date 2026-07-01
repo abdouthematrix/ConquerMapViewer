@@ -2,12 +2,12 @@ namespace ConquerMapViewer.Core.Domain.Entities;
 
 public class MapLayer
 {
-    public int Index;
-    public int Type;
-    public int RateX;
-    public int RateY;
-    public List<MapBackdrop> Backdrops;
-
+    public int Index { get; set; }
+    public int Type { get; set; }
+    public int RateX { get; set; }
+    public int RateY { get; set; }
+    public List<MapBackdrop> Backdrops { get; set; }
+    public List<MapTerrainObject> TerrainObjects { get; set; }
     public int Alpha { get; set; }
     public int ColorR { get; set; }
     public int Light { get; set; }

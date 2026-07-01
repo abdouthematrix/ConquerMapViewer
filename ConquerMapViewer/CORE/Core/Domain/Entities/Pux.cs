@@ -20,10 +20,16 @@ public sealed class Pux
     public List<PuxTileUnit> TileUnits { get; } = new();
     /// <summary>Per-cell colour overrides — written to *(cell+0x14).</summary>
     public List<PuxColorEntry> ColorEntries { get; } = new();
-    public int TileSize { get; set; }
-    // pixel dimensions — matches Puzzle.Width / Puzzle.Height convention
-    public int PixelWidth => Width * TileSize;
+    public int TileSize { get; set; }  // block step = 128, set by MapLoadingService
+
+    // Total pixel extent of the grid — used for viewport math (MinZoom, FitToWindow, ClampPosition)
+    public int PixelWidth  => Width  * TileSize;
     public int PixelHeight => Height * TileSize;
+
+    // Per-tile pixel dimensions — used for renderer culling (how far a tile extends past its cell)
+    private const int BlockSize = 128;
+    public int TilePixelWidth  => TerrainGroups.Count > 0 ? TerrainGroups[0].Field3 * BlockSize : BlockSize;
+    public int TilePixelHeight => TerrainGroups.Count > 0 ? TerrainGroups[0].Field4 * BlockSize : BlockSize;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
